@@ -2,17 +2,18 @@
 import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
+from types import MappingProxyType
 
 from stormwatch.models import StationReading
 
 DB_PATH = Path("data/history.db")
-ALLOWED_HISTORY_FIELDS = {
+ALLOWED_HISTORY_FIELDS = MappingProxyType({
     "wind_avg": "wind_avg",
     "wind_gust": "wind_gust",
     "water_level": "water_level",
     "water_temp": "water_temp",
     "air_temp": "air_temp",
-}
+})
 
 
 class WeatherHistory:
