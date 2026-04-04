@@ -95,6 +95,7 @@ OPENAI_API_KEY="sk-..." python main.py
 - Aftonbladet RSS (valfri)
 - Expressen RSS (valfri)
 - Göteborgs Stad (Mynewsdesk RSS)
+- SOS Alarm (Mynewsdesk RSS)
 - Krisinformation.se API (`counties=14,13`)
 - SR VMA API
 - SMHI varnings-API (autodetektering av fungerande endpoint)

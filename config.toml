@@ -68,6 +68,11 @@ url = "https://www.mynewsdesk.com/se/goteborgsstad/pressreleases.rss"
 source = "GOT"
 optional = true
 
+[[feeds]]
+url = "https://www.mynewsdesk.com/se/sos_alarm/pressreleases.rss"
+source = "SOS"
+optional = true
+
 [smhi]
 enabled = true
 counties = [14, 13]

@@ -64,6 +64,7 @@ def _default_config() -> dict:
             {"url": "https://www.bohuslaningen.se/rss", "source": "BL", "optional": False},
             {"url": "https://www.svt.se/nyheter/lokalt/vast/rss", "source": "SVT", "optional": True},
             {"url": "https://www.mynewsdesk.com/se/goteborgsstad/pressreleases.rss", "source": "GOT", "optional": True},
+            {"url": "https://www.mynewsdesk.com/se/sos_alarm/pressreleases.rss", "source": "SOS", "optional": True},
         ],
         "smhi": {"enabled": True, "counties": [14, 13]},
         "krisinformation": {"enabled": True, "counties": [14, 13]},
