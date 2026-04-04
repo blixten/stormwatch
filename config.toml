@@ -39,6 +39,21 @@ url = "https://sverigesradio.se/rss/program/4916"
 source = "P4V"
 optional = true
 
+[[feeds]]
+url = "https://www.svt.se/rss.xml"
+source = "SVT"
+optional = true
+
+[[feeds]]
+url = "https://rss.aftonbladet.se/rss2/small/pages/sections/senastenytt/"
+source = "AB"
+optional = true
+
+[[feeds]]
+url = "https://feeds.expressen.se/nyheter/"
+source = "EX"
+optional = true
+
 [smhi]
 enabled = true
 counties = [14, 13]

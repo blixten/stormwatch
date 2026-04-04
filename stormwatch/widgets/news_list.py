@@ -17,6 +17,9 @@ SOURCE_COLORS: dict[str, str] = {
     "SR":   "bright_yellow",
     "P4V":  "yellow",
     "SMHI": "bright_red",
+    "SVT":  "blue",
+    "AB":   "bright_magenta",
+    "EX":   "magenta",
 }
 
 
@@ -103,7 +106,7 @@ class NewsListWidget(Widget):
     def on_mount(self) -> None:
         self.query_one(ListView).focus()
 
-    def refresh_news(self, items: list[NewsItem]) -> None:
+    def refresh_news(self, items: list[NewsItem], new_count: int = 0) -> None:
         """Ersätter listans innehåll med nya poster. Bevarar markering."""
         lv = self.query_one(ListView)
         old_idx = lv.index or 0
@@ -117,6 +120,13 @@ class NewsListWidget(Widget):
         self.query_one("#news-status").update(
             f"[dim]{len(items)} artiklar[/]"
         )
+
+        if new_count > 0:
+            self.query_one("#news-title").update(
+                f" ◈ NYHETER  [bright_red blink]{new_count} NYA[/] "
+            )
+        else:
+            self.query_one("#news-title").update(" ◈ NYHETER ")
 
         if items:
             new_idx = min(old_idx, len(items) - 1)

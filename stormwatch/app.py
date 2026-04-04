@@ -138,6 +138,7 @@ class StormWatchApp(App):
         self._smhi = SmhiFetcher()
         self._archiver = Archiver()
         self._pending_article: Optional[NewsItem] = None
+        self._known_high_uids: set[str] = set()
 
     # ─── Layout ──────────────────────────────────────────────────────────────
 
@@ -248,7 +249,23 @@ class StormWatchApp(App):
 
     def on_news_updated(self, msg: NewsUpdated) -> None:
         self._state.last_news_refresh = datetime.now()
-        self.query_one(NewsListWidget).refresh_news(msg.news)
+
+        new_high = [
+            i for i in msg.news
+            if i.score >= 7 and i.uid not in self._known_high_uids
+        ]
+        if new_high:
+            titles = ", ".join(f'"{i.title[:40]}"' for i in new_high[:2])
+            suffix = f" (+{len(new_high) - 2} till)" if len(new_high) > 2 else ""
+            self.notify(
+                f"{titles}{suffix}",
+                title=f"⚡ {len(new_high)} ny/nya högrelevant(a)",
+                severity="warning",
+                timeout=10,
+            )
+        self._known_high_uids.update(i.uid for i in msg.news if i.score >= 7)
+
+        self.query_one(NewsListWidget).refresh_news(msg.news, new_count=len(new_high))
 
     def on_article_text_ready(self, msg: ArticleTextReady) -> None:
         panel = self.query_one(ArticlePanelWidget)

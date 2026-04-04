@@ -27,6 +27,9 @@ DOMAIN_SELECTORS: dict[str, list[str]] = {
     "sverigesradio.se": ["article p", ".article-text p", "[class*='text'] p"],
     "trafikverket.se": [".content p", "article p", "main p"],
     "smhi.se": ["article p", ".content p", "main p"],
+    "svt.se": ["article p", ".article-body p", "[class*='text'] p"],
+    "aftonbladet.se": ["article p", "[class*='article-body'] p", ".ab-text p"],
+    "expressen.se": ["article p", "[class*='article-body'] p", ".text-body p"],
 }
 
 FALLBACK_SELECTORS = ["article p", "main p", ".content p"]

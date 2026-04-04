@@ -34,6 +34,23 @@ DEFAULT_KEYWORDS: dict[str, int] = {
     "vinga": 2,
     "smhi": 1,
     "trafikverket": 1,
+    # Konsekvenser av stormen
+    "stormflod": 4,
+    "evakuering": 3,
+    "strömavbrott": 3,
+    "högt vattenstånd": 3,
+    "räddningstjänst": 2,
+    "inställda tåg": 2,
+    "orust": 2,
+    "tjörn": 2,
+    "stenungsund": 1,
+    "västtrafik": 1,
+    "hamn": 1,
+    "liverapport": 1,
+    "liveblogg": 1,
+    "skadad": 1,
+    "olycka": 1,
+    "sj": 1,
 }
 
 
