@@ -30,6 +30,7 @@ from stormwatch.widgets.news_list import NewsListWidget
 from stormwatch.widgets.weather_panel import WeatherPanelWidget
 
 logger = logging.getLogger(__name__)
+VMA_PRIORITY_SCORE = 9
 
 try:
     import tomllib
@@ -81,7 +82,7 @@ def _build_news_items(
             continue
         seen.add(uid)
         if entry.get("source") == "VMA":
-            score = 9
+            score = VMA_PRIORITY_SCORE
         else:
             score = classifier.score(entry["title"], entry.get("summary", ""))
 
