@@ -1,0 +1,122 @@
+/* StormWatch – Textual CSS */
+
+/* ─── Grundlayout ─────────────────────────────────────────── */
+
+Screen {
+    background: $background;
+}
+
+#main-layout {
+    height: 1fr;
+}
+
+/* ─── Vänsterpanel – nyheter ──────────────────────────────── */
+
+#news-panel {
+    width: 46;
+    height: 100%;
+    border: solid $primary-darken-2;
+}
+
+#news-title {
+    background: $primary-darken-1;
+    color: $background;
+    text-style: bold;
+    width: 100%;
+    padding: 0 1;
+    height: 1;
+}
+
+#news-status {
+    height: 1;
+    padding: 0 1;
+    color: $text-muted;
+    background: $surface;
+}
+
+ListView {
+    height: 1fr;
+    border: none;
+    padding: 0;
+}
+
+ListItem {
+    padding: 0;
+}
+
+ListItem.--highlight {
+    background: $primary 30%;
+}
+
+ListItem > Static {
+    padding: 0 1;
+}
+
+/* ─── Högerpanel ──────────────────────────────────────────── */
+
+#right-panel {
+    width: 1fr;
+    height: 100%;
+}
+
+/* ─── Väderpanel ──────────────────────────────────────────── */
+
+#weather-panel {
+    height: auto;
+    min-height: 9;
+    border: solid $accent-darken-2;
+    padding: 0;
+}
+
+#weather-title {
+    background: $accent-darken-1;
+    color: $background;
+    text-style: bold;
+    width: 100%;
+    padding: 0 1;
+    height: 1;
+}
+
+.station-row {
+    height: 1;
+    padding: 0;
+}
+
+#weather-updated {
+    height: 1;
+    color: $text-muted;
+}
+
+#right-divider {
+    height: 0;
+}
+
+/* ─── Artikelpanel ────────────────────────────────────────── */
+
+#article-panel {
+    height: 1fr;
+    border: solid $secondary-darken-2;
+    padding: 0;
+}
+
+#article-title {
+    background: $secondary-darken-1;
+    color: $background;
+    text-style: bold;
+    width: 100%;
+    padding: 0 1;
+    height: 1;
+}
+
+#article-url {
+    height: 1;
+    padding: 0 1;
+    color: $text-muted;
+    background: $surface;
+}
+
+#article-body {
+    padding: 1 2;
+    height: auto;
+    overflow-y: auto;
+}

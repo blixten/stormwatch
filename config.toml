@@ -1,0 +1,44 @@
+[app]
+news_refresh_seconds = 300
+weather_refresh_seconds = 120
+max_news_items = 80
+
+[[stations]]
+id = 114
+label = "Vinga"
+
+[[stations]]
+id = 70
+label = "Mitholmarna"
+
+[[stations]]
+id = 99
+label = "Goteborg"
+
+[[stations]]
+id = 5
+label = "Dalbobron"
+
+[[feeds]]
+url = "https://www.gp.se/rss"
+source = "GP"
+optional = false
+
+[[feeds]]
+url = "https://www.bohuslaningen.se/rss"
+source = "BL"
+optional = false
+
+[[feeds]]
+url = "https://api.sr.se/api/rss/program/95"
+source = "SR"
+optional = true
+
+[[feeds]]
+url = "https://sverigesradio.se/rss/program/4916"
+source = "P4V"
+optional = true
+
+[smhi]
+enabled = true
+counties = [14, 13]
