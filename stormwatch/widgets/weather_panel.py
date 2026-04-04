@@ -94,6 +94,7 @@ class WeatherPanelWidget(Widget):
         min-height: 10;
     }
     """
+    can_focus = True
 
     MAX_STATIONS = 8  # max antal rader
 

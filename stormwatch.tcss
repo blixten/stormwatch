@@ -18,6 +18,10 @@ Screen {
     border: solid $primary-darken-2;
 }
 
+#news-panel:focus-within {
+    border: solid $primary;
+}
+
 #news-title {
     background: $primary-darken-1;
     color: $background;
@@ -68,6 +72,10 @@ ListItem > Static {
     padding: 0;
 }
 
+#weather-panel:focus-within {
+    border: solid $accent;
+}
+
 #weather-title {
     background: $accent-darken-1;
     color: $background;
@@ -97,6 +105,10 @@ ListItem > Static {
     height: 1fr;
     border: solid $secondary-darken-2;
     padding: 0;
+}
+
+#article-panel:focus-within {
+    border: solid $secondary;
 }
 
 #article-title {
@@ -154,6 +166,10 @@ ArticlePanelWidget.hidden {
     height: 1fr;
     border: solid $warning-darken-2;
     padding: 0;
+}
+
+#history-panel:focus-within {
+    border: solid $warning;
 }
 
 #history-title {

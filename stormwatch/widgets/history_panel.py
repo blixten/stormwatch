@@ -24,6 +24,7 @@ class HistoryPanelWidget(Widget):
         padding: 0 1;
     }
     """
+    can_focus = True
 
     def compose(self) -> ComposeResult:
         yield Label(" ◈ HISTORIK (senaste 12h) – tryck H för att stänga ", id="history-title")
