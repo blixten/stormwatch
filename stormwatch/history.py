@@ -8,11 +8,46 @@ from stormwatch.models import StationReading
 
 DB_PATH = Path("data/history.db")
 ALLOWED_HISTORY_FIELDS = MappingProxyType({
-    "wind_avg": "wind_avg",
-    "wind_gust": "wind_gust",
-    "water_level": "water_level",
-    "water_temp": "water_temp",
-    "air_temp": "air_temp",
+    "wind_avg": (
+        "SELECT timestamp, wind_avg FROM readings "
+        "WHERE station_id = ? AND timestamp >= ? AND wind_avg IS NOT NULL "
+        "ORDER BY timestamp ASC",
+        "SELECT wind_avg, station_name FROM readings "
+        "WHERE timestamp >= ? AND wind_avg IS NOT NULL "
+        "ORDER BY wind_avg DESC, timestamp DESC LIMIT 1",
+    ),
+    "wind_gust": (
+        "SELECT timestamp, wind_gust FROM readings "
+        "WHERE station_id = ? AND timestamp >= ? AND wind_gust IS NOT NULL "
+        "ORDER BY timestamp ASC",
+        "SELECT wind_gust, station_name FROM readings "
+        "WHERE timestamp >= ? AND wind_gust IS NOT NULL "
+        "ORDER BY wind_gust DESC, timestamp DESC LIMIT 1",
+    ),
+    "water_level": (
+        "SELECT timestamp, water_level FROM readings "
+        "WHERE station_id = ? AND timestamp >= ? AND water_level IS NOT NULL "
+        "ORDER BY timestamp ASC",
+        "SELECT water_level, station_name FROM readings "
+        "WHERE timestamp >= ? AND water_level IS NOT NULL "
+        "ORDER BY water_level DESC, timestamp DESC LIMIT 1",
+    ),
+    "water_temp": (
+        "SELECT timestamp, water_temp FROM readings "
+        "WHERE station_id = ? AND timestamp >= ? AND water_temp IS NOT NULL "
+        "ORDER BY timestamp ASC",
+        "SELECT water_temp, station_name FROM readings "
+        "WHERE timestamp >= ? AND water_temp IS NOT NULL "
+        "ORDER BY water_temp DESC, timestamp DESC LIMIT 1",
+    ),
+    "air_temp": (
+        "SELECT timestamp, air_temp FROM readings "
+        "WHERE station_id = ? AND timestamp >= ? AND air_temp IS NOT NULL "
+        "ORDER BY timestamp ASC",
+        "SELECT air_temp, station_name FROM readings "
+        "WHERE timestamp >= ? AND air_temp IS NOT NULL "
+        "ORDER BY air_temp DESC, timestamp DESC LIMIT 1",
+    ),
 })
 
 
@@ -70,16 +105,12 @@ class WeatherHistory:
         hours: int = 12,
     ) -> list[tuple[datetime, float]]:
         """Returnerar (tid, värde)-par för de senaste N timmarna."""
-        col = ALLOWED_HISTORY_FIELDS.get(field)
-        if col is None:
+        queries = ALLOWED_HISTORY_FIELDS.get(field)
+        if queries is None:
             raise ValueError(f"Ogiltigt fält: {field}")
+        recent_query, _ = queries
         since = (datetime.now() - timedelta(hours=hours)).isoformat(timespec="seconds")
-        cur = self._conn.execute(
-            f"SELECT timestamp, {col} FROM readings "
-            f"WHERE station_id = ? AND timestamp >= ? AND {col} IS NOT NULL "
-            f"ORDER BY timestamp ASC",
-            (station_id, since),
-        )
+        cur = self._conn.execute(recent_query, (station_id, since))
         return [(datetime.fromisoformat(row[0]), row[1]) for row in cur.fetchall()]
 
     def get_recent_max(
@@ -88,16 +119,12 @@ class WeatherHistory:
         hours: int = 12,
     ) -> tuple[float, str] | None:
         """Returnerar högsta värde + stationsnamn för senaste N timmarna."""
-        col = ALLOWED_HISTORY_FIELDS.get(field)
-        if col is None:
+        queries = ALLOWED_HISTORY_FIELDS.get(field)
+        if queries is None:
             raise ValueError(f"Ogiltigt fält: {field}")
+        _, max_query = queries
         since = (datetime.now() - timedelta(hours=hours)).isoformat(timespec="seconds")
-        cur = self._conn.execute(
-            f"SELECT {col}, station_name FROM readings "
-            f"WHERE timestamp >= ? AND {col} IS NOT NULL "
-            f"ORDER BY {col} DESC, timestamp DESC LIMIT 1",
-            (since,),
-        )
+        cur = self._conn.execute(max_query, (since,))
         row = cur.fetchone()
         if row is None:
             return None
