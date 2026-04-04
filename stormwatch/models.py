@@ -29,6 +29,8 @@ class NewsItem:
     published: Optional[datetime]
     score: int           # 0–10 relevansscore
     full_text: Optional[str] = None  # None tills artikel skrapas
+    ai_score: Optional[int] = None          # GPT-relevansscore 0–10
+    ai_analysis: Optional[str] = None       # GPT-motivering
 
 
 @dataclass

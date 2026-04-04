@@ -15,6 +15,7 @@ from textual.containers import Horizontal, Vertical
 from textual._work_decorator import work
 
 from stormwatch.archiver import Archiver
+from stormwatch.ai_analyzer import AiAnalyzer
 from stormwatch.classifier import ArticleClassifier
 from stormwatch.fetchers.krisinformation import KrisinformationFetcher
 from stormwatch.fetchers.rss import RssFetcher
@@ -123,6 +124,13 @@ class ArticleTextReady(Message):
         self.text = text
         super().__init__()
 
+class AiAnalysisReady(Message):
+    def __init__(self, item: NewsItem, ai_score: Optional[int], ai_analysis: Optional[str]) -> None:
+        self.item = item
+        self.ai_score = ai_score
+        self.ai_analysis = ai_analysis
+        super().__init__()
+
 
 # ─── Huvudapp ────────────────────────────────────────────────────────────────
 
@@ -150,6 +158,7 @@ class StormWatchApp(App):
         self._config: dict = {}
         self._http: Optional[httpx.AsyncClient] = None
         self._classifier: Optional[ArticleClassifier] = None
+        self._ai_analyzer: Optional[AiAnalyzer] = None
         self._smhi = SmhiFetcher()
         self._archiver = Archiver()
         self._history = WeatherHistory()
@@ -176,6 +185,13 @@ class StormWatchApp(App):
         self._config = _load_config()
         # Använd inbyggda standardnyckelord (config-override stöds ej ännu)
         self._classifier = ArticleClassifier()
+
+        # Initiera AI-analysator om API-nyckel finns
+        self._ai_analyzer = AiAnalyzer()
+        if self._ai_analyzer.is_available():
+            logger.info("OpenAI GPT-analys aktiverad")
+        else:
+            logger.info("OpenAI GPT-analys inaktiverad (OPENAI_API_KEY saknas)")
 
         self._http = httpx.AsyncClient(
             timeout=httpx.Timeout(15.0, connect=8.0),
@@ -214,7 +230,9 @@ class StormWatchApp(App):
 
     @work(exclusive=True, name="weather_refresh")
     async def refresh_weather(self) -> None:
-        stations = self._config.get("stations", [])
+        all_stations = self._config.get("stations", [])
+        # Filtrera bort stationer med enabled=false
+        stations = [s for s in all_stations if s.get("enabled", True)]
         if not stations or not self._http:
             return
         fetcher = VivaFetcher()
@@ -273,6 +291,13 @@ class StormWatchApp(App):
         text = await scraper.fetch_text(item.url, self._http)
         self.post_message(ArticleTextReady(item, text))
 
+        # AI-relevansbedömning om tillgänglig
+        if self._ai_analyzer and self._ai_analyzer.is_available():
+            ai_score, ai_analysis = await self._ai_analyzer.analyze(
+                item.title, item.summary, text
+            )
+            self.post_message(AiAnalysisReady(item, ai_score, ai_analysis))
+
     # ─── Meddelandehanterare ─────────────────────────────────────────────────
 
     def on_weather_updated(self, msg: WeatherUpdated) -> None:
@@ -307,6 +332,11 @@ class StormWatchApp(App):
         panel = self.query_one(ArticlePanelWidget)
         panel.show_article(msg.item, msg.text)
         self._archiver.update_fulltext(msg.item, msg.text)
+
+    def on_ai_analysis_ready(self, msg: AiAnalysisReady) -> None:
+        panel = self.query_one(ArticlePanelWidget)
+        panel.show_ai_analysis(msg.item, msg.ai_score, msg.ai_analysis)
+        self._archiver.update_ai_analysis(msg.item, msg.ai_score, msg.ai_analysis)
 
     def on_news_list_widget_article_highlighted(
         self, msg: NewsListWidget.ArticleHighlighted
