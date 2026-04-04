@@ -80,9 +80,10 @@ def _build_news_items(
         if uid in seen:
             continue
         seen.add(uid)
-        score = classifier.score(entry["title"], entry.get("summary", ""))
         if entry.get("source") == "VMA":
-            score = max(score, 9)
+            score = 9
+        else:
+            score = classifier.score(entry["title"], entry.get("summary", ""))
 
         items.append(NewsItem(
             uid=uid,

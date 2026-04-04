@@ -2,10 +2,11 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 import httpx
+
+from stormwatch.fetchers.common import first_str, parse_iso_datetime
 
 logger = logging.getLogger(__name__)
 
@@ -34,11 +35,11 @@ def _parse_items(data: Any) -> list[dict]:
     entries = _extract_entries(data)
     items: list[dict] = []
     for entry in entries:
-        title = _first_str(entry, "Title", "title", "Headline", "headline")
-        url = _first_str(entry, "Link", "link", "Url", "url")
-        summary = _first_str(entry, "BodyText", "bodyText", "Summary", "summary", "Description", "description")
-        uid_raw = _first_str(entry, "Identifier", "identifier", "Id", "id", "NewsId", "newsId")
-        published_raw = _first_str(entry, "Published", "published", "PublishedDate", "publishedDate", "Date", "date")
+        title = first_str(entry, "Title", "title", "Headline", "headline")
+        url = first_str(entry, "Link", "link", "Url", "url")
+        summary = first_str(entry, "BodyText", "bodyText", "Summary", "summary", "Description", "description")
+        uid_raw = first_str(entry, "Identifier", "identifier", "Id", "id", "NewsId", "newsId")
+        published_raw = first_str(entry, "Published", "published", "PublishedDate", "publishedDate", "Date", "date")
 
         if not title:
             continue
@@ -52,7 +53,7 @@ def _parse_items(data: Any) -> list[dict]:
             "title": title.strip(),
             "url": url.strip(),
             "summary": (summary or "").strip(),
-            "published": _parse_iso_datetime(published_raw),
+            "published": parse_iso_datetime(published_raw),
         })
     return items
 
@@ -69,20 +70,3 @@ def _extract_entries(data: Any) -> list[dict]:
             return [x for x in val if isinstance(x, dict)]
 
     return [data]
-
-
-def _first_str(obj: dict, *keys: str) -> Optional[str]:
-    for key in keys:
-        val = obj.get(key)
-        if isinstance(val, str) and val.strip():
-            return val
-    return None
-
-
-def _parse_iso_datetime(value: Optional[str]) -> Optional[datetime]:
-    if not value:
-        return None
-    try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00"))
-    except ValueError:
-        return None
