@@ -35,7 +35,7 @@ Poängfärger:
 ### 2. AI-baserad analys med OpenAI GPT (valfri)
 
 Modulen `stormwatch/ai_analyzer.py` skickar artikelns rubrik, sammanfattning
-och eventuell fulltext till **OpenAI GPT-5-mini** och får tillbaka ett
+och eventuell fulltext till **OpenAI GPT-4o-mini** och får tillbaka ett
 relevansscore 0–10 samt en kort motivering på svenska. Detta läge aktiveras
 automatiskt när miljövariabeln `OPENAI_API_KEY` är satt; annars används
 enbart nyckelordsanalysen.
