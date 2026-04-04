@@ -6,6 +6,13 @@ from pathlib import Path
 from stormwatch.models import StationReading
 
 DB_PATH = Path("data/history.db")
+ALLOWED_HISTORY_FIELDS = {
+    "wind_avg": "wind_avg",
+    "wind_gust": "wind_gust",
+    "water_level": "water_level",
+    "water_temp": "water_temp",
+    "air_temp": "air_temp",
+}
 
 
 class WeatherHistory:
@@ -62,13 +69,13 @@ class WeatherHistory:
         hours: int = 12,
     ) -> list[tuple[datetime, float]]:
         """Returnerar (tid, värde)-par för de senaste N timmarna."""
-        allowed_fields = {"wind_avg", "wind_gust", "water_level", "water_temp", "air_temp"}
-        if field not in allowed_fields:
+        col = ALLOWED_HISTORY_FIELDS.get(field)
+        if col is None:
             raise ValueError(f"Ogiltigt fält: {field}")
         since = (datetime.now() - timedelta(hours=hours)).isoformat(timespec="seconds")
         cur = self._conn.execute(
-            f"SELECT timestamp, {field} FROM readings "
-            f"WHERE station_id = ? AND timestamp >= ? AND {field} IS NOT NULL "
+            f"SELECT timestamp, {col} FROM readings "
+            f"WHERE station_id = ? AND timestamp >= ? AND {col} IS NOT NULL "
             f"ORDER BY timestamp ASC",
             (station_id, since),
         )
@@ -80,14 +87,14 @@ class WeatherHistory:
         hours: int = 12,
     ) -> tuple[float, str] | None:
         """Returnerar högsta värde + stationsnamn för senaste N timmarna."""
-        allowed_fields = {"wind_avg", "wind_gust", "water_level", "water_temp", "air_temp"}
-        if field not in allowed_fields:
+        col = ALLOWED_HISTORY_FIELDS.get(field)
+        if col is None:
             raise ValueError(f"Ogiltigt fält: {field}")
         since = (datetime.now() - timedelta(hours=hours)).isoformat(timespec="seconds")
         cur = self._conn.execute(
-            f"SELECT {field}, station_name FROM readings "
-            f"WHERE timestamp >= ? AND {field} IS NOT NULL "
-            f"ORDER BY {field} DESC, timestamp DESC LIMIT 1",
+            f"SELECT {col}, station_name FROM readings "
+            f"WHERE timestamp >= ? AND {col} IS NOT NULL "
+            f"ORDER BY {col} DESC, timestamp DESC LIMIT 1",
             (since,),
         )
         row = cur.fetchone()
