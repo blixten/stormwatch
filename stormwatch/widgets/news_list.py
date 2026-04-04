@@ -15,6 +15,7 @@ from stormwatch.widgets.activity_log import ActivityLogWidget
 SOURCE_COLORS: dict[str, str] = {
     "GP":   "cyan",
     "BL":   "green",
+    "ST":   "bright_green",
     "SR":   "bright_yellow",
     "P4V":  "yellow",
     "SMHI": "bright_red",
@@ -77,8 +78,9 @@ class NewsRow(ListItem):
         if len(title) > 55:
             title = title[:54] + "…"
 
+        updated_marker = " [bright_yellow]↑UPD[/]" if self.item.is_updated else ""
         line1 = f"[{source_color}][{self.item.source:<4}][/] {badge} {title}"
-        line2 = f"[dim]      {age:>4}  score:{self.item.score}/10[/]"
+        line2 = f"[dim]      {age:>4}  score:{self.item.score}/10[/]{updated_marker}"
         return f"{line1}\n{line2}"
 
     def update_content(self) -> None:
@@ -111,7 +113,7 @@ class NewsListWidget(Widget):
     def on_mount(self) -> None:
         self.query_one(ListView).focus()
 
-    def refresh_news(self, items: list[NewsItem], new_count: int = 0) -> None:
+    def refresh_news(self, items: list[NewsItem], new_count: int = 0, updated_count: int = 0) -> None:
         """Ersätter listans innehåll med nya poster. Bevarar markering."""
         lv = self.query_one(ListView)
         old_idx = lv.index or 0
@@ -126,9 +128,17 @@ class NewsListWidget(Widget):
             f"[dim]{len(items)} artiklar[/]"
         )
 
-        if new_count > 0:
+        if new_count > 0 and updated_count > 0:
+            self.query_one("#news-title").update(
+                f" ◈ NYHETER  [bright_red blink]{new_count} NYA[/] [bright_yellow]{updated_count} UPD[/] "
+            )
+        elif new_count > 0:
             self.query_one("#news-title").update(
                 f" ◈ NYHETER  [bright_red blink]{new_count} NYA[/] "
+            )
+        elif updated_count > 0:
+            self.query_one("#news-title").update(
+                f" ◈ NYHETER  [bright_yellow]{updated_count} UPD[/] "
             )
         else:
             self.query_one("#news-title").update(" ◈ NYHETER ")

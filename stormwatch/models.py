@@ -32,6 +32,7 @@ class NewsItem:
     full_text: Optional[str] = None  # None tills artikel skrapas
     ai_score: Optional[int] = None          # GPT-relevansscore 0–10
     ai_analysis: Optional[str] = None       # GPT-motivering
+    is_updated: bool = False  # True om artikeln uppdaterats sedan förra hämtningen
 
 
 @dataclass
