@@ -8,9 +8,6 @@ Applikationen kombinerar:
 - **Myndighetsvarningar** från SMHI, Krisinformation.se och VMA
 - **Historik** i lokal SQLite-databas
 - **Artikelhämtning** av fulltext (när det går)
-
-## Vad kollegor behöver veta
-
 - Projektet är byggt med **Python + Textual** (TUI i terminalen).
 - Körning sker lokalt och lagrar data i mappen `data/`.
 - Fokus är robust drift: fel i en källa ska inte stoppa resten av appen.
