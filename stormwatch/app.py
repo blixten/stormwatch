@@ -19,9 +19,11 @@ from stormwatch.classifier import ArticleClassifier
 from stormwatch.fetchers.rss import RssFetcher
 from stormwatch.fetchers.smhi import SmhiFetcher
 from stormwatch.fetchers.viva import VivaFetcher
+from stormwatch.history import WeatherHistory
 from stormwatch.models import AppState, NewsItem, StationReading
 from stormwatch.scraper import ArticleScraper
 from stormwatch.widgets.article_panel import ArticlePanelWidget
+from stormwatch.widgets.history_panel import HistoryPanelWidget
 from stormwatch.widgets.news_list import NewsListWidget
 from stormwatch.widgets.weather_panel import WeatherPanelWidget
 
@@ -126,6 +128,7 @@ class StormWatchApp(App):
         Binding("f",           "filter_toggle",    "Filtrera hög relevans"),
         Binding("s",           "sort_toggle",      "Sortering"),
         Binding("o",           "open_browser",     "Öppna i webbläsare"),
+        Binding("h",           "history_toggle",   "Historik/Graf"),
         Binding("q,ctrl+c",    "quit",             "Avsluta"),
     ]
 
@@ -137,8 +140,10 @@ class StormWatchApp(App):
         self._classifier: Optional[ArticleClassifier] = None
         self._smhi = SmhiFetcher()
         self._archiver = Archiver()
+        self._history = WeatherHistory()
         self._pending_article: Optional[NewsItem] = None
         self._known_high_uids: set[str] = set()
+        self._history_visible: bool = False
 
     # ─── Layout ──────────────────────────────────────────────────────────────
 
@@ -150,6 +155,7 @@ class StormWatchApp(App):
                 yield WeatherPanelWidget(id="weather-panel")
                 yield Label("", id="right-divider")
                 yield ArticlePanelWidget(id="article-panel")
+                yield HistoryPanelWidget(id="history-panel")
         yield Footer()
 
     # ─── Initiering ──────────────────────────────────────────────────────────
@@ -183,6 +189,7 @@ class StormWatchApp(App):
     async def on_unmount(self) -> None:
         if self._http:
             await self._http.aclose()
+        self._history.close()
 
     @work(name="smhi_probe")
     async def _do_probe_smhi(self) -> None:
@@ -245,7 +252,10 @@ class StormWatchApp(App):
     def on_weather_updated(self, msg: WeatherUpdated) -> None:
         self._state.readings = msg.readings
         self._state.last_weather_refresh = datetime.now()
+        self._history.save(msg.readings)
         self.query_one(WeatherPanelWidget).refresh_display(msg.readings)
+        if self._history_visible:
+            self.query_one(HistoryPanelWidget).refresh_display(self._history)
 
     def on_news_updated(self, msg: NewsUpdated) -> None:
         self._state.last_news_refresh = datetime.now()
@@ -323,6 +333,18 @@ class StormWatchApp(App):
         self.query_one(NewsListWidget).refresh_news(items[:max_items])
         mode = "score" if self._state.sort_by_score else "tid"
         self.notify(f"Sorterat efter {mode}", timeout=2)
+
+    def action_history_toggle(self) -> None:
+        self._history_visible = not self._history_visible
+        article = self.query_one(ArticlePanelWidget)
+        history = self.query_one(HistoryPanelWidget)
+        if self._history_visible:
+            article.add_class("hidden")
+            history.add_class("visible")
+            history.refresh_display(self._history)
+        else:
+            article.remove_class("hidden")
+            history.remove_class("visible")
 
     def action_open_browser(self) -> None:
         import webbrowser

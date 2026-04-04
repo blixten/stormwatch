@@ -120,3 +120,29 @@ ListItem > Static {
     height: auto;
     overflow-y: auto;
 }
+
+/* ─── Historikpanel ───────────────────────────────────────── */
+
+ArticlePanelWidget.hidden {
+    display: none;
+}
+
+#history-panel {
+    height: 1fr;
+    border: solid $warning-darken-2;
+    padding: 0;
+}
+
+#history-title {
+    background: $warning-darken-1;
+    color: $background;
+    text-style: bold;
+    width: 100%;
+    padding: 0 1;
+    height: 1;
+}
+
+#history-body {
+    padding: 1 2;
+    height: auto;
+}

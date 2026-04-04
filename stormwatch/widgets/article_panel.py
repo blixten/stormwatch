@@ -2,9 +2,9 @@
 import re
 
 from textual.app import ComposeResult
-from textual.scroll_view import ScrollView
 from textual.widget import Widget
 from textual.widgets import Label, Static
+from textual.containers import VerticalScroll
 
 from stormwatch.classifier import ArticleClassifier
 from stormwatch.models import NewsItem
@@ -31,11 +31,12 @@ class ArticlePanelWidget(Widget):
     def compose(self) -> ComposeResult:
         yield Label(" ◈ ARTIKEL ", id="article-title")
         yield Label("", id="article-url")
-        yield Static(
-            "[dim]Välj en artikel från listan med ↑↓, Enter för att hämta fulltext.[/dim]",
-            id="article-body",
-            markup=True,
-        )
+        with VerticalScroll(id="article-scroll"):
+            yield Static(
+                "[dim]Välj en artikel från listan med ↑↓, Enter för att hämta fulltext.[/dim]",
+                id="article-body",
+                markup=True,
+            )
 
     def show_summary(self, item: NewsItem) -> None:
         """Visas direkt vid navigation (↑↓) – RSS-sammanfattning."""
@@ -91,7 +92,7 @@ class ArticlePanelWidget(Widget):
         self.query_one("#article-body").update(markup)
         # Scrolla till toppen
         try:
-            self.query_one("#article-body").scroll_home(animate=False)
+            self.query_one("#article-scroll").scroll_home(animate=False)
         except Exception:
             pass
 

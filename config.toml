@@ -19,6 +19,10 @@ label = "Goteborg"
 id = 5
 label = "Dalbobron"
 
+[[stations]]
+id = 171
+label = "Tangudden"
+
 [[feeds]]
 url = "https://www.gp.se/rss"
 source = "GP"
