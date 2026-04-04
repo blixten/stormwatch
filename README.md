@@ -13,8 +13,59 @@ Applikationen kombinerar:
 
 - Projektet är byggt med **Python + Textual** (TUI i terminalen).
 - Körning sker lokalt och lagrar data i mappen `data/`.
-- Det finns **inga krav på API-nycklar** för de källor som nu är aktiverade.
 - Fokus är robust drift: fel i en källa ska inte stoppa resten av appen.
+- Datakällor (RSS, SMHI, Krisinformation, VIVA) kräver **inga API-nycklar**.
+- Det **AI-baserade analysläget** kräver en API-nyckel till OpenAI (se nedan).
+
+## Analyslägen
+
+StormWatch har två lägen för att bedöma nyhetsartiklars relevans:
+
+### 1. Nyckelordsbaserad analys (alltid aktiv)
+
+Modulen `stormwatch/classifier.py` poängsätter varje artikel automatiskt med
+ett **relevansscore 0–10** baserat på regelbaserad nyckelordsmatchning.
+Poängen beräknas lokalt utan nätverksanrop och kräver ingen API-nyckel.
+Rubriken väger dubbelt mot brödtexten. En artikel måste innehålla minst ett
+storm- eller väderspecifikt kärnord för att få poäng alls (förhindrar falska
+positiva från enbart ortnamn).
+
+Poängfärger:
+- `▲` röd – score ≥ 7 (hög relevans)
+- `◆` gul – score 4–6 (medel relevans)
+- `·` grå – score 0–3 (låg/ingen relevans)
+
+### 2. AI-baserad analys med OpenAI GPT (valfri)
+
+Modulen `stormwatch/ai_analyzer.py` skickar artikelns rubrik, sammanfattning
+och eventuell fulltext till **OpenAI GPT-5-mini** och får tillbaka ett
+relevansscore 0–10 samt en kort motivering på svenska. Detta läge aktiveras
+automatiskt när miljövariabeln `OPENAI_API_KEY` är satt; annars används
+enbart nyckelordsanalysen.
+
+AI-analysen körs när du öppnar en artikels fulltext (tangent `Enter`) och
+visas i artikelpanelen bredvid det nyckelordsbaserade scoret.
+
+#### Aktivera AI-analys
+
+Sätt din OpenAI-nyckel som miljövariabel innan du startar appen:
+
+```bash
+export OPENAI_API_KEY="sk-..."
+python main.py
+```
+
+Eller för en enskild körning:
+
+```bash
+OPENAI_API_KEY="sk-..." python main.py
+```
+
+> **Obs:** Utan `OPENAI_API_KEY` fungerar appen fullt ut med enbart
+> nyckelordsanalys. AI-läget är ett frivilligt tillägg.
+>
+> Paketet `openai` måste vara installerat (`pip install openai` eller
+> inkluderat via `requirements.txt`) för att AI-läget ska kunna aktiveras.
 
 ## Arkitektur i korthet
 
@@ -27,7 +78,8 @@ Applikationen kombinerar:
   - `krisinformation.py`
   - `vma.py`
 - `stormwatch/widgets/`: UI-paneler (nyheter, väder, artikel, historik)
-- `stormwatch/classifier.py`: relevanspoäng 0–10
+- `stormwatch/classifier.py`: nyckelordsbaserad relevanspoäng 0–10
+- `stormwatch/ai_analyzer.py`: AI-baserad relevansbedömning via OpenAI GPT
 - `stormwatch/scraper.py`: hämtar artikeltext från webbsidor
 - `stormwatch/history.py`: SQLite-lagring och enkel grafvisning
 - `stormwatch/archiver.py`: arkiverar relevanta artiklar till JSONL
