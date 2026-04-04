@@ -4,6 +4,55 @@ Baserat på mediasvep 2026-04-04. Prioriterat efter snabbhet att implementera vs
 
 ---
 
+## BUGGAR – måste åtgärdas
+
+### KRITISK: `NewsItem` saknar fältet `is_updated`
+- **Fil:** `stormwatch/models.py` + `stormwatch/app.py:157,384`
+- **Problem:** `app.py` anropar `dataclasses.replace(item, is_updated=is_updated)` och läser `item.is_updated`, men `NewsItem`-dataklassen har inget sådant fält. Kraschar med `TypeError` vid första nyhetsuppdatering.
+- **Fix:** Lägg till `is_updated: bool = False` i `NewsItem`-dataklassen.
+
+### KRITISK: `ai_analyzer.py` refererar till `gpt-5-mini` – modellen existerar inte
+- **Fil:** `stormwatch/ai_analyzer.py:10`
+- **Problem:** `_MODEL = "gpt-5-mini"` — denna modell finns inte i OpenAI:s API. Alla AI-analyser misslyckas tyst om `OPENAI_API_KEY` är satt.
+- **Fix:** Byt till `"gpt-4o-mini"`.
+
+### `history.py` sparar inte `wind_gust_dir_str` till databasen
+- **Fil:** `stormwatch/history.py:27-35,39-55`
+- **Problem:** Tabellschemat och INSERT saknar det nya fältet `wind_gust_dir_str` som lades till i `StationReading`. Historikdata för byvindriktning går förlorad.
+- **Fix:** Lägg till kolumnen i `CREATE TABLE` och i INSERT-satsen.
+
+### `ActivityLogWidget` är inte inkluderad i layouten
+- **Fil:** `stormwatch/app.py:226-235`
+- **Problem:** `ActivityLogWidget` importeras och används i `_log()`, men läggs aldrig till i `compose()`. Alla anrop till `query_one(ActivityLogWidget)` träffar `NoMatches`-except och loggposterna försvinner tyst. Widgeten existerar men är aldrig synlig/aktiv.
+- **Fix:** Antingen lägg till `ActivityLogWidget` i `compose()` eller ta bort den och använd enbart `sub_title`.
+
+### VMA-fetcher använder v2 – v3 är aktiv
+- **Fil:** `stormwatch/fetchers/vma.py:13`
+- **Problem:** `API_URL = "https://vmaapi.sr.se/api/v2/alerts/feed.json"` – SR:s VMA API är nu på v3. v2 kan returnera tomma svar eller felkoder.
+- **Fix:** Testa `https://vmaapi.sr.se/api/v3/alerts/feed.json` och uppdatera om v3 fungerar.
+
+### `BohuslaningenFetcher` och `StromstadsTidningFetcher` saknar datumextrahering
+- **Filer:** `stormwatch/fetchers/bohuslaningen.py:82-91`, `stormwatch/fetchers/stromstadstidning.py:86-95`
+- **Problem:** Alla artiklar från BL och ST får `published: None`. De hamnar alltid längst ner vid datumsortering och uppdateringsdetektering fungerar aldrig.
+- **Fix:** Försök extrahera `<time datetime="...">` eller `<meta property="article:published_time">` ur HTML-sidan.
+
+### SMHI-fetcher kan misslyckas tyst utan notifiering
+- **Fil:** `stormwatch/fetchers/smhi.py:32-43`
+- **Problem:** Om ingen av `CANDIDATE_URLS` svarar med 200 sätts `_working_url = None` och SMHI-varningar utelämnas helt utan att användaren informeras (förutom en logger.info). Under ett aktivt stormskeende är detta kritiskt.
+- **Fix:** Logga en synlig notifiering i UI om SMHI-probing misslyckas efter start.
+
+### `_wind_color` Beaufort-trösklar stämmer inte med `_beaufort()`
+- **Fil:** `stormwatch/widgets/weather_panel.py:13-24`
+- **Problem:** `_wind_color` markerar ≥24.5 m/s som "Orkan" (`bright_red`), men `_beaufort()` kallar 24.5 m/s för "Stark kuling" (Bf 9) – Orkan är ≥32.7. Färgerna ger missvisande intryck av extrem styrka för lägre vindstyrkor.
+- **Fix:** Synkronisera `_wind_color`-trösklarna med Beaufort-definitionen: Storm (Bf 10) ≥28.5, Svår storm (Bf 11) ≥32.7, Orkan (Bf 12) ≥32.7.
+
+### SR-flödets URL (`program/95`) är via det deprecated SR Open API
+- **Fil:** `config.toml`
+- **Problem:** `https://api.sr.se/api/rss/program/95` fungerar idag men SR:s öppna API är officiellt deprecerat. Risk för att det slutar fungera utan förvarning.
+- **Fix:** Byt till `https://sverigesradio.se/rss/program/95` (direktlänk, ej via API-wrapper) eller övervaka flödet aktivt.
+
+---
+
 ## PRIO 1 – Snabbvinn (inga API-nycklar, direkt relevant)
 
 ### Krisinformation.se
