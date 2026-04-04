@@ -70,6 +70,7 @@ class VivaFetcher:
         wind_gust: Optional[float] = None
         wind_dir_str: Optional[str] = None
         wind_dir_deg: Optional[float] = None
+        wind_gust_dir_str: Optional[str] = None
         water_level: Optional[int] = None
         water_temp: Optional[float] = None
         air_temp: Optional[float] = None
@@ -95,6 +96,8 @@ class VivaFetcher:
                         wind_dir_str = dir_s
                 elif "byvind" in sname:
                     wind_gust = speed
+                    if dir_s and wind_gust_dir_str is None:
+                        wind_gust_dir_str = dir_s
 
             elif stype == "heading" and "vindriktning" in sname:
                 try:
@@ -127,6 +130,7 @@ class VivaFetcher:
             wind_gust=wind_gust,
             wind_dir_str=wind_dir_str,
             wind_dir_deg=wind_dir_deg,
+            wind_gust_dir_str=wind_gust_dir_str,
             water_level=water_level,
             water_temp=water_temp,
             air_temp=air_temp,

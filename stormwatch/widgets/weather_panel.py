@@ -28,30 +28,36 @@ def _format_reading(r: StationReading) -> str:
     if r.error:
         return f"[dim]  {r.name:<20} Fel: {r.error[:25]}[/dim]"
 
-    arrow = wind_dir_arrow(r.wind_dir_str, r.wind_dir_deg)
-    dir_label = r.wind_dir_str or "?"
+    gust_color = _wind_color(r.wind_gust or r.wind_avg)
 
-    gust_color = _wind_color(r.wind_gust)
-
+    # Byvind med riktning
     if r.wind_gust is not None:
-        wind_str = f"[{gust_color}]{arrow} {dir_label} {r.wind_gust:.1f} m/s byvind[/]"
-        if r.wind_avg is not None:
-            wind_str += f" [dim](medel {r.wind_avg:.1f})[/dim]"
-    elif r.wind_avg is not None:
-        wind_str = f"[{gust_color}]{arrow} {dir_label} {r.wind_avg:.1f} m/s medel[/]"
+        gust_arrow = wind_dir_arrow(r.wind_gust_dir_str, None)
+        gust_dir = r.wind_gust_dir_str or "?"
+        gust_str = f"[{gust_color}]By {gust_arrow}{gust_dir} {r.wind_gust:.1f}[/]"
     else:
-        wind_str = "[dim]Ingen vinddata[/dim]"
+        gust_str = "[dim]By –[/dim]"
+
+    # Medelvind med riktning
+    if r.wind_avg is not None:
+        avg_arrow = wind_dir_arrow(r.wind_dir_str, r.wind_dir_deg)
+        avg_dir = r.wind_dir_str or "?"
+        avg_str = f"Medel {avg_arrow}{avg_dir} {r.wind_avg:.1f}"
+    else:
+        avg_str = "Medel –"
+
+    wind_str = f"{gust_str} [dim]{avg_str} m/s[/dim]"
 
     if r.water_level is not None:
         sign = "+" if r.water_level >= 0 else ""
-        level_str = f"  [cyan]Vattenstånd: {sign}{r.water_level} cm[/cyan]"
+        level_str = f"  [cyan]{sign}{r.water_level}cm[/cyan]"
     else:
         level_str = ""
 
     if r.water_temp is not None:
-        level_str += f"  [dim]{r.water_temp:.1f}°C[/dim]"
+        level_str += f"[dim] {r.water_temp:.1f}°[/dim]"
 
-    name_part = f"[bold]{r.name:<18}[/bold]"
+    name_part = f"[bold]{r.name:<14}[/bold]"
     return f"  {name_part} {wind_str}{level_str}"
 
 
@@ -108,18 +114,32 @@ class WeatherPanelWidget(Widget):
             else:
                 row.update("")
 
-        # Sammanfattningsrad med Beaufort för starkaste vinden
-        max_gust = max(
-            (r.wind_gust for r in readings if r.wind_gust is not None),
-            default=None
-        )
-        if max_gust is not None:
+        # Sammanfattningsrad: starkaste byvind och medelvind
+        gust_readings = [(r.wind_gust, r) for r in readings if r.wind_gust is not None]
+        avg_readings  = [(r.wind_avg,  r) for r in readings if r.wind_avg  is not None]
+
+        parts = []
+        if gust_readings:
+            max_gust, max_r = max(gust_readings, key=lambda x: x[0])
             bft = _beaufort(max_gust)
             color = _wind_color(max_gust)
-            summary = f"  [dim]Starkast uppmätt byvind:[/dim] [{color}]{max_gust:.1f} m/s – {bft}[/{color}]"
-        else:
-            summary = ""
-        self.query_one("#station-extra").update(summary)
+            arr = wind_dir_arrow(max_r.wind_gust_dir_str, None)
+            d = max_r.wind_gust_dir_str or "?"
+            parts.append(
+                f"[dim]Max by:[/dim] [{color}]{arr}{d} {max_gust:.1f} m/s[/] "
+                f"[dim]({max_r.name}, {bft})[/dim]"
+            )
+        if avg_readings:
+            max_avg, avg_r = max(avg_readings, key=lambda x: x[0])
+            arr = wind_dir_arrow(avg_r.wind_dir_str, avg_r.wind_dir_deg)
+            d = avg_r.wind_dir_str or "?"
+            avg_color = _wind_color(max_avg)
+            parts.append(
+                f"[dim]Max medel:[/dim] [{avg_color}]{arr}{d} {max_avg:.1f} m/s[/] "
+                f"[dim]({avg_r.name})[/dim]"
+            )
+
+        self.query_one("#station-extra").update("  " + "   ".join(parts) if parts else "")
 
         ts = datetime.now().strftime("%H:%M:%S")
         self.query_one("#weather-updated").update(

@@ -10,8 +10,9 @@ class StationReading:
     name: str
     wind_avg: Optional[float] = None
     wind_gust: Optional[float] = None
-    wind_dir_str: Optional[str] = None   # t.ex. "SV", "V"
-    wind_dir_deg: Optional[float] = None  # grader
+    wind_dir_str: Optional[str] = None      # medelvind riktning t.ex. "SV"
+    wind_dir_deg: Optional[float] = None   # grader
+    wind_gust_dir_str: Optional[str] = None  # byvind riktning
     water_level: Optional[int] = None    # cm
     water_temp: Optional[float] = None   # °C
     air_temp: Optional[float] = None     # °C
