@@ -25,6 +25,7 @@ SOURCE_COLORS: dict[str, str] = {
     "KRIS": "bright_blue",
     "VMA":  "red",
     "GOT":  "cyan",
+    "SOS":  "bright_cyan",
 }
 
 
