@@ -67,22 +67,29 @@ class WeatherHistory:
                 wind_avg     REAL,
                 wind_gust    REAL,
                 wind_dir_str TEXT,
+                wind_gust_dir_str TEXT,
                 water_level  INTEGER,
                 water_temp   REAL,
                 air_temp     REAL
             )
         """)
+        if not self._has_column("readings", "wind_gust_dir_str"):
+            self._conn.execute("ALTER TABLE readings ADD COLUMN wind_gust_dir_str TEXT")
         self._conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_station_time ON readings (station_id, timestamp)"
         )
         self._conn.commit()
+
+    def _has_column(self, table: str, column: str) -> bool:
+        cur = self._conn.execute(f"PRAGMA table_info({table})")
+        return any(row[1] == column for row in cur.fetchall())
 
     def save(self, readings: list[StationReading]) -> None:
         ts = datetime.now().isoformat(timespec="seconds")
         rows = [
             (
                 ts, r.station_id, r.name,
-                r.wind_avg, r.wind_gust, r.wind_dir_str,
+                r.wind_avg, r.wind_gust, r.wind_dir_str, r.wind_gust_dir_str,
                 r.water_level, r.water_temp, r.air_temp,
             )
             for r in readings
@@ -92,9 +99,9 @@ class WeatherHistory:
             self._conn.executemany("""
                 INSERT INTO readings
                   (timestamp, station_id, station_name,
-                   wind_avg, wind_gust, wind_dir_str,
+                   wind_avg, wind_gust, wind_dir_str, wind_gust_dir_str,
                    water_level, water_temp, air_temp)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, rows)
             self._conn.commit()
 

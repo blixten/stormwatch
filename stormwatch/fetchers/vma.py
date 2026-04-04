@@ -10,7 +10,7 @@ from stormwatch.fetchers.common import first_str, parse_iso_datetime
 
 logger = logging.getLogger(__name__)
 
-API_URL = "https://vmaapi.sr.se/api/v2/alerts/feed.json"
+API_URL = "https://vmaapi.sr.se/api/v3/alerts/feed.json"
 SOURCE = "VMA"
 
 

@@ -14,11 +14,11 @@ from stormwatch.models import StationReading
 def _wind_color(gust: Optional[float]) -> str:
     if gust is None:
         return "dim"
-    if gust >= 24.5:  # Orkan
+    if gust >= 32.7:  # Orkan / svår storm och uppåt
         return "bright_red"
-    if gust >= 20.8:  # Svår storm
+    if gust >= 28.5:  # Storm
         return "red"
-    if gust >= 17.2:  # Storm
+    if gust >= 24.5:  # Stark kuling
         return "bright_yellow"
     if gust >= 13.9:  # Hård kuling
         return "yellow"

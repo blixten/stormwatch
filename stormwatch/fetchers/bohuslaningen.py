@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime
+from typing import Optional
 from urllib.parse import urljoin, urlparse
 
 import httpx
@@ -79,6 +81,7 @@ def _parse_articles(html: str, base_url: str) -> list[dict]:
             if not title or len(title) < MIN_TITLE_LENGTH:
                 continue
 
+            published = _extract_published(link, soup)
             seen_urls.add(url)
             items.append({
                 "uid": f"BL:{url}",
@@ -86,7 +89,7 @@ def _parse_articles(html: str, base_url: str) -> list[dict]:
                 "title": title,
                 "url": url,
                 "summary": "",
-                "published": None,
+                "published": published,
             })
             if len(items) >= MAX_ARTICLES:
                 return items
@@ -100,3 +103,36 @@ def _is_same_domain(url: str, base_url: str) -> bool:
         return url_host == base_host or url_host.endswith("." + base_host)
     except Exception:
         return False
+
+
+def _extract_published(link, soup: BeautifulSoup) -> Optional[datetime]:
+    article = link.find_parent("article")
+    candidates = []
+    if article:
+        candidates.append(article)
+    candidates.append(link)
+    candidates.extend(link.parents)
+
+    for node in candidates:
+        if not hasattr(node, "select_one"):
+            continue
+        time_tag = node.select_one("time[datetime]")
+        if time_tag:
+            dt = _parse_datetime(time_tag.get("datetime"))
+            if dt is not None:
+                return dt
+
+    meta_time = soup.select_one('meta[property="article:published_time"]')
+    if meta_time:
+        return _parse_datetime(meta_time.get("content"))
+    return None
+
+
+def _parse_datetime(value: Optional[str]) -> Optional[datetime]:
+    if not value:
+        return None
+    value = value.strip()
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None

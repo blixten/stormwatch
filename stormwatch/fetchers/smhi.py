@@ -63,6 +63,10 @@ class SmhiFetcher:
 
         return items
 
+    @property
+    def is_ready(self) -> bool:
+        return self._working_url is not None
+
 
 def _parse_warnings(data, county: int) -> list[dict]:
     items = []

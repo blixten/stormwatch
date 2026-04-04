@@ -1,4 +1,4 @@
-"""GPT-5-mini relevansbedömning av nyhetsartiklar (kräver OPENAI_API_KEY)."""
+"""GPT-4o-mini relevansbedömning av nyhetsartiklar (kräver OPENAI_API_KEY)."""
 from __future__ import annotations
 
 import logging
@@ -7,7 +7,7 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-_MODEL = "gpt-5-mini"
+_MODEL = "gpt-4o-mini"
 
 _SYSTEM_PROMPT = (
     "Du är en redaktör som bedömer om nyhetsartiklar är relevanta för "
@@ -43,7 +43,7 @@ def _parse_response(text: str) -> tuple[Optional[int], str]:
 
 
 class AiAnalyzer:
-    """Analyserar artikelrelevans med OpenAI GPT-5-mini.
+    """Analyserar artikelrelevans med OpenAI GPT-4o-mini.
 
     Används bara om OPENAI_API_KEY är satt i miljön; annars returnerar
     ``is_available()`` False och ``analyze()`` returnerar ``None, None``.

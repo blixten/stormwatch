@@ -34,7 +34,7 @@ source = "GP"
 optional = false
 
 [[feeds]]
-url = "https://api.sr.se/api/rss/program/95"
+url = "https://sverigesradio.se/rss/program/95"
 source = "SR"
 optional = true
 

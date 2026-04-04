@@ -289,11 +289,22 @@ class StormWatchApp(App):
     @work(name="smhi_probe")
     async def _do_probe_smhi(self) -> None:
         self._log("Söker SMHI API-URL…")
+        smhi_ready = False
         if self._http:
             await self._smhi.probe(
                 getattr(self, "_smhi_counties", [14, 13]), self._http
             )
-        self._log("SMHI API redo")
+            smhi_ready = self._smhi.is_ready
+        if smhi_ready:
+            self._log("SMHI API redo")
+        else:
+            self._log("SMHI API kunde inte nås")
+            self.notify(
+                "SMHI-varningar kunde inte hämtas vid uppstart.",
+                title="SMHI API-fel",
+                severity="error",
+                timeout=10,
+            )
 
     # ─── Bakgrundsarbetare ───────────────────────────────────────────────────
 
