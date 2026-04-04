@@ -50,8 +50,26 @@ DEFAULT_KEYWORDS: dict[str, int] = {
     "liveblogg": 1,
     "skadad": 1,
     "olycka": 1,
-    "sj": 1,
 }
+
+# Nyckelord som MÅSTE finnas (minst ett) för att en artikel ska få poäng alls.
+# Dessa representerar direkta storm- eller vädervarningssignaler och förhindrar
+# att enbart geografiska- eller generiska termer ger falska positiva träffar.
+STORM_CORE_KEYWORDS: frozenset[str] = frozenset({
+    # Storm Dave-specifika termer
+    "stormen dave", "storm dave",
+    "dave",          # Stormens namn; acceptabel falsk-positiv-risk i detta sammanhang
+    # Meteorologiska storm-/vindtermer
+    "storm", "oväder", "stormvarning", "stormbyar",
+    "orkan", "orkankust",
+    "klass 3", "klass 2", "klass 1",
+    "röd varning", "orange varning", "gul varning",
+    "stormflod", "kuling", "hård kuling",
+    "vind",          # Fångar artiklar om stark vind utan att nämna "storm" explicit
+    # Direkta stormkonsekvenser
+    "högt vattenstånd", "översvämning",
+    "evakuering", "strömavbrott", "inställda tåg",
+})
 
 
 class ArticleClassifier:
@@ -63,12 +81,26 @@ class ArticleClassifier:
             (re.compile(re.escape(word), re.IGNORECASE | re.UNICODE), weight)
             for word, weight in sorted_kw
         ]
+        # Kompilerade mönster för kärnkontroll (kortslutande sökning)
+        self._core_patterns: list[re.Pattern] = [
+            re.compile(re.escape(word), re.IGNORECASE | re.UNICODE)
+            for word in sorted(STORM_CORE_KEYWORDS, key=len, reverse=True)
+        ]
 
     def score(self, title: str, summary: str) -> int:
-        """Returnerar relevansscore 0–10. Rubrik väger dubbelt."""
-        total = 0
+        """Returnerar relevansscore 0–10. Rubrik väger dubbelt.
+
+        Returnerar 0 direkt om varken titel eller sammanfattning innehåller
+        något av kärnorden (storm/väder-specifika termer). Detta förhindrar
+        att enbart geografiska träffar ger falska höga poäng.
+        """
         title_lower = (title or "").lower()
         summary_lower = (summary or "").lower()
+        combined = title_lower + " " + summary_lower
+        # Kräv minst ett storm-/väderspecifikt kärnord – kortsluter vid första träff
+        if not any(p.search(combined) for p in self._core_patterns):
+            return 0
+        total = 0
         for pattern, weight in self._patterns:
             title_hits = len(pattern.findall(title_lower))
             summary_hits = len(pattern.findall(summary_lower))
