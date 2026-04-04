@@ -9,6 +9,7 @@ from typing import Optional
 import httpx
 from textual.app import App, ComposeResult
 from textual.binding import Binding
+from textual.css.query import NoMatches
 from textual.message import Message
 from textual.widgets import Footer, Header, Label
 from textual.containers import Horizontal, Vertical
@@ -25,6 +26,7 @@ from stormwatch.fetchers.viva import VivaFetcher
 from stormwatch.history import WeatherHistory
 from stormwatch.models import AppState, NewsItem, StationReading
 from stormwatch.scraper import ArticleScraper
+from stormwatch.widgets.activity_log import ActivityLogWidget
 from stormwatch.widgets.article_panel import ArticlePanelWidget
 from stormwatch.widgets.history_panel import HistoryPanelWidget
 from stormwatch.widgets.news_list import NewsListWidget
@@ -138,6 +140,7 @@ class StormWatchApp(App):
     CSS_PATH = str(__import__("pathlib").Path(__file__).parent.parent / "stormwatch.tcss")
     TITLE = "StormWatch"
     SUB_TITLE = "Stormen Dave – svenska västkusten"
+    _DEFAULT_SUBTITLE = "Stormen Dave – svenska västkusten"
 
     BINDINGS = [
         Binding("up,k",        "cursor_up",       "Upp",          show=False),
@@ -181,6 +184,18 @@ class StormWatchApp(App):
 
     # ─── Initiering ──────────────────────────────────────────────────────────
 
+    def _log(self, text: str) -> None:
+        """Uppdaterar titelraden och lägger till en post i aktivitetsloggen."""
+        self.sub_title = text
+        try:
+            self.query_one(ActivityLogWidget).add_entry(text)
+        except NoMatches:
+            pass
+
+    def _restore_subtitle(self) -> None:
+        """Återställer titelradens undertext till standardvärdet."""
+        self.sub_title = self._DEFAULT_SUBTITLE
+
     async def on_mount(self) -> None:
         self._config = _load_config()
         # Använd inbyggda standardnyckelord (config-override stöds ej ännu)
@@ -221,10 +236,12 @@ class StormWatchApp(App):
 
     @work(name="smhi_probe")
     async def _do_probe_smhi(self) -> None:
+        self._log("Söker SMHI API-URL…")
         if self._http:
             await self._smhi.probe(
                 getattr(self, "_smhi_counties", [14, 13]), self._http
             )
+        self._log("SMHI API redo")
 
     # ─── Bakgrundsarbetare ───────────────────────────────────────────────────
 
@@ -235,9 +252,12 @@ class StormWatchApp(App):
         stations = [s for s in all_stations if s.get("enabled", True)]
         if not stations or not self._http:
             return
+        self._log(f"Hämtar väder för {len(stations)} station(er)…")
         fetcher = VivaFetcher()
         readings = await fetcher.fetch_all(stations, self._http)
+        self._log(f"Väder uppdaterat – {len(readings)} stationer")
         self.post_message(WeatherUpdated(readings))
+        self._restore_subtitle()
 
     @work(exclusive=True, name="news_refresh")
     async def refresh_news(self) -> None:
@@ -248,27 +268,36 @@ class StormWatchApp(App):
         if not self._http or not self._classifier:
             return
 
+        self._log("Hämtar RSS-flöden…")
         rss_fetcher = RssFetcher()
         raw = await rss_fetcher.fetch_all(feeds, self._http)
+        self._log(f"RSS: {len(raw)} artiklar hämtade")
 
         if smhi_cfg.get("enabled", True) and self._smhi._working_url:
+            self._log("Hämtar SMHI-varningar…")
             smhi_raw = await self._smhi.fetch_warnings(
                 smhi_cfg.get("counties", [14, 13]), self._http
             )
             raw.extend(smhi_raw)
+            self._log(f"SMHI: {len(smhi_raw)} varning(ar)")
 
         if kris_cfg.get("enabled", True):
+            self._log("Hämtar krisinformation…")
             kris_fetcher = KrisinformationFetcher()
             kris_raw = await kris_fetcher.fetch_news(
                 kris_cfg.get("counties", [14, 13]), self._http
             )
             raw.extend(kris_raw)
+            self._log(f"Krisinformation: {len(kris_raw)} poster")
 
         if vma_cfg.get("enabled", True):
+            self._log("Kontrollerar VMA-larm…")
             vma_fetcher = VmaFetcher()
             vma_raw = await vma_fetcher.fetch_alerts(self._http)
             raw.extend(vma_raw)
+            self._log(f"VMA: {len(vma_raw)} larm")
 
+        self._log(f"Klassificerar {len(raw)} artiklar…")
         items = _build_news_items(raw, self._classifier)
         items = _sort_news(items, self._state.sort_by_score, self._state.filter_high_only)
         self._state.news = items
@@ -278,7 +307,9 @@ class StormWatchApp(App):
             logger.info("Arkiverade %d nya artiklar", saved)
 
         max_items = self._config.get("app", {}).get("max_news_items", 80)
+        self._log(f"Nyhetslistan uppdaterad – {len(items)} artiklar")
         self.post_message(NewsUpdated(items[:max_items]))
+        self._restore_subtitle()
 
     @work(exclusive=True, name="article_scrape")
     async def _scrape_article(self, item: NewsItem) -> None:
@@ -287,16 +318,26 @@ class StormWatchApp(App):
         self._pending_article = item
         panel = self.query_one(ArticlePanelWidget)
         panel.show_loading(item)
+        self._log(f"Hämtar fulltext: {item.title[:50]}…")
         scraper = ArticleScraper()
         text = await scraper.fetch_text(item.url, self._http)
+        self._log("Fulltext hämtad")
         self.post_message(ArticleTextReady(item, text))
 
         # AI-relevansbedömning om tillgänglig
         if self._ai_analyzer and self._ai_analyzer.is_available():
+            self._log("Analyserar artikel med AI…")
             ai_score, ai_analysis = await self._ai_analyzer.analyze(
                 item.title, item.summary, text
             )
+            self._log(
+                f"AI-analys klar – relevans {ai_score}/10"
+                if ai_score is not None
+                else "AI-analys klar"
+            )
             self.post_message(AiAnalysisReady(item, ai_score, ai_analysis))
+
+        self._restore_subtitle()
 
     # ─── Meddelandehanterare ─────────────────────────────────────────────────
 

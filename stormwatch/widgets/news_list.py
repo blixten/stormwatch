@@ -10,6 +10,7 @@ from textual.widgets import Label, ListItem, ListView, Static
 
 from stormwatch.classifier import ArticleClassifier
 from stormwatch.models import NewsItem
+from stormwatch.widgets.activity_log import ActivityLogWidget
 
 SOURCE_COLORS: dict[str, str] = {
     "GP":   "cyan",
@@ -105,6 +106,7 @@ class NewsListWidget(Widget):
         yield Label(" ◈ NYHETER ", id="news-title")
         yield Label("Läser in…", id="news-status")
         yield ListView(id="news-list")
+        yield ActivityLogWidget(id="activity-log")
 
     def on_mount(self) -> None:
         self.query_one(ListView).focus()
