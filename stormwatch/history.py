@@ -7,6 +7,7 @@ from types import MappingProxyType
 from stormwatch.models import StationReading
 
 DB_PATH = Path("data/history.db")
+_ALLOWED_COLUMN_NAMES = frozenset({"wind_gust_dir_str"})
 ALLOWED_HISTORY_FIELDS = MappingProxyType({
     "wind_avg": (
         "SELECT timestamp, wind_avg FROM readings "
@@ -81,6 +82,8 @@ class WeatherHistory:
         self._conn.commit()
 
     def _has_column(self, column: str) -> bool:
+        if column not in _ALLOWED_COLUMN_NAMES:
+            return False
         cur = self._conn.execute("PRAGMA table_info(readings)")
         return any(row[1] == column for row in cur.fetchall())
 
