@@ -16,8 +16,10 @@ from textual._work_decorator import work
 
 from stormwatch.archiver import Archiver
 from stormwatch.classifier import ArticleClassifier
+from stormwatch.fetchers.krisinformation import KrisinformationFetcher
 from stormwatch.fetchers.rss import RssFetcher
 from stormwatch.fetchers.smhi import SmhiFetcher
+from stormwatch.fetchers.vma import VmaFetcher
 from stormwatch.fetchers.viva import VivaFetcher
 from stormwatch.history import WeatherHistory
 from stormwatch.models import AppState, NewsItem, StationReading
@@ -58,8 +60,12 @@ def _default_config() -> dict:
         "feeds": [
             {"url": "https://www.gp.se/rss", "source": "GP", "optional": False},
             {"url": "https://www.bohuslaningen.se/rss", "source": "BL", "optional": False},
+            {"url": "https://www.svt.se/nyheter/lokalt/vast/rss", "source": "SVT", "optional": True},
+            {"url": "https://www.mynewsdesk.com/se/goteborgsstad/pressreleases.rss", "source": "GOT", "optional": True},
         ],
         "smhi": {"enabled": True, "counties": [14, 13]},
+        "krisinformation": {"enabled": True, "counties": [14, 13]},
+        "vma": {"enabled": True},
         "classifier": {"keywords": {}},
     }
 
@@ -213,6 +219,8 @@ class StormWatchApp(App):
     async def refresh_news(self) -> None:
         feeds = self._config.get("feeds", [])
         smhi_cfg = self._config.get("smhi", {})
+        kris_cfg = self._config.get("krisinformation", {})
+        vma_cfg = self._config.get("vma", {})
         if not self._http or not self._classifier:
             return
 
@@ -224,6 +232,18 @@ class StormWatchApp(App):
                 smhi_cfg.get("counties", [14, 13]), self._http
             )
             raw.extend(smhi_raw)
+
+        if kris_cfg.get("enabled", True):
+            kris_fetcher = KrisinformationFetcher()
+            kris_raw = await kris_fetcher.fetch_news(
+                kris_cfg.get("counties", [14, 13]), self._http
+            )
+            raw.extend(kris_raw)
+
+        if vma_cfg.get("enabled", True):
+            vma_fetcher = VmaFetcher()
+            vma_raw = await vma_fetcher.fetch_alerts(self._http)
+            raw.extend(vma_raw)
 
         items = _build_news_items(raw, self._classifier)
         items = _sort_news(items, self._state.sort_by_score, self._state.filter_high_only)
