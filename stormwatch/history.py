@@ -62,14 +62,38 @@ class WeatherHistory:
         hours: int = 12,
     ) -> list[tuple[datetime, float]]:
         """Returnerar (tid, värde)-par för de senaste N timmarna."""
+        allowed_fields = {"wind_avg", "wind_gust", "water_level", "water_temp", "air_temp"}
+        if field not in allowed_fields:
+            raise ValueError(f"Ogiltigt fält: {field}")
         since = (datetime.now() - timedelta(hours=hours)).isoformat(timespec="seconds")
         cur = self._conn.execute(
-            f"SELECT timestamp, {field} FROM readings "  # noqa: S608
+            f"SELECT timestamp, {field} FROM readings "
             f"WHERE station_id = ? AND timestamp >= ? AND {field} IS NOT NULL "
             f"ORDER BY timestamp ASC",
             (station_id, since),
         )
         return [(datetime.fromisoformat(row[0]), row[1]) for row in cur.fetchall()]
+
+    def get_recent_max(
+        self,
+        field: str,
+        hours: int = 12,
+    ) -> tuple[float, str] | None:
+        """Returnerar högsta värde + stationsnamn för senaste N timmarna."""
+        allowed_fields = {"wind_avg", "wind_gust", "water_level", "water_temp", "air_temp"}
+        if field not in allowed_fields:
+            raise ValueError(f"Ogiltigt fält: {field}")
+        since = (datetime.now() - timedelta(hours=hours)).isoformat(timespec="seconds")
+        cur = self._conn.execute(
+            f"SELECT {field}, station_name FROM readings "
+            f"WHERE timestamp >= ? AND {field} IS NOT NULL "
+            f"ORDER BY {field} DESC, timestamp DESC LIMIT 1",
+            (since,),
+        )
+        row = cur.fetchone()
+        if row is None:
+            return None
+        return row[0], row[1]
 
     def station_ids(self) -> list[tuple[int, str]]:
         """Returnerar alla (station_id, namn) som finns i databasen."""

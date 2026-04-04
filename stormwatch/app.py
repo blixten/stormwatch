@@ -421,7 +421,7 @@ class StormWatchApp(App):
         self._state.readings = msg.readings
         self._state.last_weather_refresh = datetime.now()
         self._history.save(msg.readings)
-        self.query_one(WeatherPanelWidget).refresh_display(msg.readings)
+        self.query_one(WeatherPanelWidget).refresh_display(msg.readings, self._history)
         if self._history_visible:
             self.query_one(HistoryPanelWidget).refresh_display(self._history)
 
