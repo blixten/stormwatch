@@ -121,7 +121,30 @@ ListItem > Static {
     overflow-y: auto;
 }
 
-/* ─── Historikpanel ───────────────────────────────────────── */
+/* ─── Aktivitetslogg ──────────────────────────────────────── */
+
+#activity-log {
+    height: 8;
+    background: $surface;
+    border-top: dashed $surface-lighten-2;
+    padding: 0;
+}
+
+#activity-log-title {
+    background: $surface-darken-1;
+    color: $text-muted;
+    text-style: bold;
+    width: 100%;
+    padding: 0 1;
+    height: 1;
+}
+
+#activity-log-content {
+    padding: 0 1;
+    height: 1fr;
+    overflow-y: auto;
+    color: $text-muted;
+}
 
 ArticlePanelWidget.hidden {
     display: none;
