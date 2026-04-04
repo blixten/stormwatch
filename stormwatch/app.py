@@ -21,6 +21,7 @@ from textual._work_decorator import work
 from stormwatch.archiver import Archiver
 from stormwatch.ai_analyzer import AiAnalyzer
 from stormwatch.classifier import ArticleClassifier
+from stormwatch.fetchers.bohuslaningen import BohuslaningenFetcher
 from stormwatch.fetchers.krisinformation import KrisinformationFetcher
 from stormwatch.fetchers.rss import RssFetcher
 from stormwatch.fetchers.smhi import SmhiFetcher
@@ -67,13 +68,13 @@ def _default_config() -> dict:
         ],
         "feeds": [
             {"url": "https://www.gp.se/rss", "source": "GP", "optional": False},
-            {"url": "https://www.bohuslaningen.se/rss", "source": "BL", "optional": False},
             {"url": "https://www.svt.se/nyheter/lokalt/vast/rss", "source": "SVT", "optional": True},
             {"url": "https://www.mynewsdesk.com/se/goteborgsstad/pressreleases.rss", "source": "GOT", "optional": True},
         ],
         "smhi": {"enabled": True, "counties": [14, 13]},
         "krisinformation": {"enabled": True, "counties": [14, 13]},
         "vma": {"enabled": True},
+        "bohuslaningen": {"enabled": True},
         "classifier": {"keywords": {}},
     }
 
@@ -315,6 +316,7 @@ class StormWatchApp(App):
         smhi_cfg = self._config.get("smhi", {})
         kris_cfg = self._config.get("krisinformation", {})
         vma_cfg = self._config.get("vma", {})
+        bl_cfg = self._config.get("bohuslaningen", {})
         st_cfg = self._config.get("stromstadstidning", {})
         if not self._http or not self._classifier:
             return
@@ -347,6 +349,13 @@ class StormWatchApp(App):
             vma_raw = await vma_fetcher.fetch_alerts(self._http)
             raw.extend(vma_raw)
             self._log(f"VMA: {len(vma_raw)} larm")
+
+        if bl_cfg.get("enabled", True):
+            self._log("Hämtar Bohuslänningen…")
+            bl_fetcher = BohuslaningenFetcher()
+            bl_raw = await bl_fetcher.fetch_news(self._http)
+            raw.extend(bl_raw)
+            self._log(f"BL: {len(bl_raw)} artiklar")
 
         if st_cfg.get("enabled", True):
             self._log("Hämtar Strömstads Tidning…")
