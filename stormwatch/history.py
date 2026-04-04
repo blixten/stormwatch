@@ -73,15 +73,15 @@ class WeatherHistory:
                 air_temp     REAL
             )
         """)
-        if not self._has_column("readings", "wind_gust_dir_str"):
+        if not self._has_column("wind_gust_dir_str"):
             self._conn.execute("ALTER TABLE readings ADD COLUMN wind_gust_dir_str TEXT")
         self._conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_station_time ON readings (station_id, timestamp)"
         )
         self._conn.commit()
 
-    def _has_column(self, table: str, column: str) -> bool:
-        cur = self._conn.execute(f"PRAGMA table_info({table})")
+    def _has_column(self, column: str) -> bool:
+        cur = self._conn.execute("PRAGMA table_info(readings)")
         return any(row[1] == column for row in cur.fetchall())
 
     def save(self, readings: list[StationReading]) -> None:
