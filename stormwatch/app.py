@@ -2,7 +2,10 @@
 from __future__ import annotations
 
 import logging
+import re
 import sys
+import unicodedata
+from dataclasses import replace
 from datetime import datetime
 from typing import Optional
 
@@ -18,9 +21,11 @@ from textual._work_decorator import work
 from stormwatch.archiver import Archiver
 from stormwatch.ai_analyzer import AiAnalyzer
 from stormwatch.classifier import ArticleClassifier
+from stormwatch.fetchers.bohuslaningen import BohuslaningenFetcher
 from stormwatch.fetchers.krisinformation import KrisinformationFetcher
 from stormwatch.fetchers.rss import RssFetcher
 from stormwatch.fetchers.smhi import SmhiFetcher
+from stormwatch.fetchers.stromstadstidning import StromstadsTidningFetcher
 from stormwatch.fetchers.vma import VmaFetcher
 from stormwatch.fetchers.viva import VivaFetcher
 from stormwatch.history import WeatherHistory
@@ -63,27 +68,54 @@ def _default_config() -> dict:
         ],
         "feeds": [
             {"url": "https://www.gp.se/rss", "source": "GP", "optional": False},
-            {"url": "https://www.bohuslaningen.se/rss", "source": "BL", "optional": False},
             {"url": "https://www.svt.se/nyheter/lokalt/vast/rss", "source": "SVT", "optional": True},
             {"url": "https://www.mynewsdesk.com/se/goteborgsstad/pressreleases.rss", "source": "GOT", "optional": True},
         ],
         "smhi": {"enabled": True, "counties": [14, 13]},
         "krisinformation": {"enabled": True, "counties": [14, 13]},
         "vma": {"enabled": True},
+        "bohuslaningen": {"enabled": True},
         "classifier": {"keywords": {}},
     }
+
+
+# Lokala/regionala källor med överlappande bevakning (GP, Bohuslänningen, Strömstads Tidning).
+# Artiklar med identisk normaliserad titel deduplificeras inbördes eftersom dessa tidningar
+# ofta publicerar samma TT-telegram eller täcker exakt samma lokala händelse.
+_REGIONAL_SOURCES: frozenset[str] = frozenset({"GP", "BL", "ST"})
+
+
+def _normalize_title(title: str) -> str:
+    """Normaliserar titel för dubblettdetektering (GP/BL/ST)."""
+    t = title.lower()
+    t = unicodedata.normalize("NFKD", t)
+    t = "".join(c for c in t if not unicodedata.combining(c))
+    t = re.sub(r"[^\w\s]", "", t)
+    t = re.sub(r"\s+", " ", t).strip()
+    return t
 
 
 def _build_news_items(
     raw: list[dict], classifier: ArticleClassifier
 ) -> list[NewsItem]:
-    seen: set[str] = set()
+    seen_uids: set[str] = set()
+    seen_regional_titles: set[str] = set()
     items: list[NewsItem] = []
     for entry in raw:
         uid = entry["uid"]
-        if uid in seen:
+        if uid in seen_uids:
             continue
-        seen.add(uid)
+        seen_uids.add(uid)
+
+        # Dedupliceringskontroll för regionala källor (GP/BL/ST)
+        source = entry.get("source", "")
+        if source in _REGIONAL_SOURCES:
+            norm = _normalize_title(entry.get("title", ""))
+            if norm and norm in seen_regional_titles:
+                continue
+            if norm:
+                seen_regional_titles.add(norm)
+
         if entry.get("source") == "VMA":
             score = VMA_PRIORITY_SCORE
         else:
@@ -108,6 +140,23 @@ def _sort_news(items: list[NewsItem], by_score: bool, high_only: bool) -> list[N
     return sorted(filtered, key=lambda i: -(i.published.timestamp() if i.published else 0))
 
 
+def _mark_updated_items(
+    items: list[NewsItem],
+    known_published: dict[str, Optional[datetime]],
+) -> list[NewsItem]:
+    """Markerar artiklar vars publiceringsdatum ändrats sedan förra hämtningen."""
+    result: list[NewsItem] = []
+    for item in items:
+        prev = known_published.get(item.uid)
+        is_updated = (
+            prev is not None
+            and item.published is not None
+            and item.published > prev
+        )
+        result.append(replace(item, is_updated=is_updated) if is_updated else item)
+    return result
+
+
 # ─── Meddelanden ────────────────────────────────────────────────────────────
 
 class WeatherUpdated(Message):
@@ -116,8 +165,9 @@ class WeatherUpdated(Message):
         super().__init__()
 
 class NewsUpdated(Message):
-    def __init__(self, news: list[NewsItem]) -> None:
+    def __init__(self, news: list[NewsItem], updated_count: int = 0) -> None:
         self.news = news
+        self.updated_count = updated_count
         super().__init__()
 
 class ArticleTextReady(Message):
@@ -167,6 +217,7 @@ class StormWatchApp(App):
         self._history = WeatherHistory()
         self._pending_article: Optional[NewsItem] = None
         self._known_high_uids: set[str] = set()
+        self._known_published: dict[str, Optional[datetime]] = {}
         self._history_visible: bool = False
 
     # ─── Layout ──────────────────────────────────────────────────────────────
@@ -265,6 +316,8 @@ class StormWatchApp(App):
         smhi_cfg = self._config.get("smhi", {})
         kris_cfg = self._config.get("krisinformation", {})
         vma_cfg = self._config.get("vma", {})
+        bl_cfg = self._config.get("bohuslaningen", {})
+        st_cfg = self._config.get("stromstadstidning", {})
         if not self._http or not self._classifier:
             return
 
@@ -297,8 +350,29 @@ class StormWatchApp(App):
             raw.extend(vma_raw)
             self._log(f"VMA: {len(vma_raw)} larm")
 
+        if bl_cfg.get("enabled", True):
+            self._log("Hämtar Bohuslänningen…")
+            bl_fetcher = BohuslaningenFetcher()
+            bl_raw = await bl_fetcher.fetch_news(self._http)
+            raw.extend(bl_raw)
+            self._log(f"BL: {len(bl_raw)} artiklar")
+
+        if st_cfg.get("enabled", True):
+            self._log("Hämtar Strömstads Tidning…")
+            st_fetcher = StromstadsTidningFetcher()
+            st_raw = await st_fetcher.fetch_news(self._http)
+            raw.extend(st_raw)
+            self._log(f"ST: {len(st_raw)} artiklar")
+
         self._log(f"Klassificerar {len(raw)} artiklar…")
         items = _build_news_items(raw, self._classifier)
+        items = _mark_updated_items(items, self._known_published)
+
+        # Uppdatera kända publiceringsdatum
+        for item in items:
+            if item.published is not None:
+                self._known_published[item.uid] = item.published
+
         items = _sort_news(items, self._state.sort_by_score, self._state.filter_high_only)
         self._state.news = items
 
@@ -306,9 +380,10 @@ class StormWatchApp(App):
         if saved:
             logger.info("Arkiverade %d nya artiklar", saved)
 
+        updated_count = sum(1 for i in items if i.is_updated)
         max_items = self._config.get("app", {}).get("max_news_items", 80)
         self._log(f"Nyhetslistan uppdaterad – {len(items)} artiklar")
-        self.post_message(NewsUpdated(items[:max_items]))
+        self.post_message(NewsUpdated(items[:max_items], updated_count=updated_count))
         self._restore_subtitle()
 
     @work(exclusive=True, name="article_scrape")
@@ -367,7 +442,11 @@ class StormWatchApp(App):
             )
         self._known_high_uids.update(i.uid for i in msg.news if i.score >= 7)
 
-        self.query_one(NewsListWidget).refresh_news(msg.news, new_count=len(new_high))
+        self.query_one(NewsListWidget).refresh_news(
+            msg.news,
+            new_count=len(new_high),
+            updated_count=msg.updated_count,
+        )
 
     def on_article_text_ready(self, msg: ArticleTextReady) -> None:
         panel = self.query_one(ArticlePanelWidget)

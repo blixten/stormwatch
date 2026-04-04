@@ -23,7 +23,11 @@ HEADERS = {
 # Domän → lista av CSS-selektorer att prova i ordning
 DOMAIN_SELECTORS: dict[str, list[str]] = {
     "gp.se": ["article p", ".article-body p", "[class*='ArticleBody'] p"],
+    # Bohuslänningen – korrekt domän (dubbelt n, ASCII-kodning av "bohuslänningen")
+    "bohuslanningen.se": ["article p", ".article-body p", "[class*='article'] p"],
+    # Fallback för eventuell omdirigering från felstavad domän med enkelt n
     "bohuslaningen.se": ["article p", ".article-body p", "[class*='article'] p"],
+    "stromstadstidning.se": ["article p", ".article-body p", "[class*='article'] p", "main p"],
     "sverigesradio.se": ["article p", ".article-text p", "[class*='text'] p"],
     "trafikverket.se": [".content p", "article p", "main p"],
     "smhi.se": ["article p", ".content p", "main p"],

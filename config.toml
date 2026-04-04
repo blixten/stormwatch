@@ -34,11 +34,6 @@ source = "GP"
 optional = false
 
 [[feeds]]
-url = "https://www.bohuslaningen.se/rss"
-source = "BL"
-optional = false
-
-[[feeds]]
 url = "https://api.sr.se/api/rss/program/95"
 source = "SR"
 optional = true
@@ -77,4 +72,10 @@ enabled = true
 counties = [14, 13]
 
 [vma]
+enabled = true
+
+[bohuslaningen]
+enabled = true
+
+[stromstadstidning]
 enabled = true

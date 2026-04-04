@@ -77,15 +77,20 @@ class RssFetcher:
 
 
 def _parse_date(entry: dict) -> Optional[datetime]:
-    """Konverterar feedparser-datum till datetime i UTC."""
+    """Konverterar feedparser-datum till datetime i UTC.
+    Returnerar det senaste av published/updated/created för att fånga artikeluppdateringar.
+    """
+    dates: list[datetime] = []
     for field in ("published_parsed", "updated_parsed", "created_parsed"):
         val = entry.get(field)
         if val and isinstance(val, time.struct_time):
             try:
-                return datetime(*val[:6], tzinfo=timezone.utc)
+                dates.append(datetime(*val[:6], tzinfo=timezone.utc))
             except (ValueError, TypeError):
                 pass
-    return None
+    if not dates:
+        return None
+    return max(dates)
 
 
 def _clean_text(text: str) -> str:
