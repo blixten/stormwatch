@@ -75,6 +75,24 @@ class Archiver:
         except Exception as exc:
             logger.error("Kunde inte spara fulltext: %s", exc)
 
+    def update_ai_analysis(
+        self, item: NewsItem, ai_score: int | None, ai_analysis: str | None
+    ) -> None:
+        """Sparar AI-relevansbedömning för en arkiverad artikel."""
+        if item.uid not in self._saved_uids or item.score < MIN_SCORE:
+            return
+        if ai_score is None and not ai_analysis:
+            return
+        try:
+            with open(ARTICLES_FILE, "a", encoding="utf-8") as f:
+                record = _to_record(item)
+                record["ai_score"] = ai_score
+                record["ai_analysis"] = ai_analysis
+                record["has_ai_analysis"] = True
+                f.write(json.dumps(record, ensure_ascii=False) + "\n")
+        except Exception as exc:
+            logger.error("Kunde inte spara AI-analys: %s", exc)
+
     @property
     def count(self) -> int:
         return len(self._saved_uids)

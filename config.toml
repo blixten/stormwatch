@@ -6,22 +6,27 @@ max_news_items = 80
 [[stations]]
 id = 114
 label = "Vinga"
+enabled = true
 
 [[stations]]
 id = 70
 label = "Mitholmarna"
+enabled = true
 
 [[stations]]
 id = 99
 label = "Goteborg"
+enabled = true
 
 [[stations]]
 id = 5
 label = "Dalbobron"
+enabled = true
 
 [[stations]]
 id = 171
 label = "Tangudden"
+enabled = true
 
 [[feeds]]
 url = "https://www.gp.se/rss"
