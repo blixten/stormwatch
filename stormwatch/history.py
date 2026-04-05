@@ -191,6 +191,6 @@ def bar_chart(
         f"  [bold]{label}[/bold]\n"
         f"  [{color}]{line}[/{color}]\n"
         f"  [dim]{t0}→{t1}  "
-        f"nu:[/dim] [{color}]{latest:.1f}{unit}[/{color}]"
+        f"senast:[/dim] [{color}]{latest:.1f}{unit}[/{color}]"
         f"  [dim]↑{hi:.1f}  ↓{lo:.1f}[/dim]"
     )
