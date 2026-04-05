@@ -95,7 +95,7 @@ class AiAnalyzer:
                     {"role": "system", "content": _SYSTEM_PROMPT},
                     {"role": "user", "content": user_msg},
                 ],
-                max_tokens=120,
+                max_tokens=200,
                 temperature=0.2,
             )
             text = response.choices[0].message.content or ""

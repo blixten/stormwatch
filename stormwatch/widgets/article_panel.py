@@ -54,7 +54,7 @@ class ArticlePanelWidget(Widget):
         src_color = SOURCE_COLORS.get(item.source, "white")
 
         header = (
-            f"[bold]{item.title}[/bold]\n\n"
+            f"[bold]{_sanitize(item.title)}[/bold]\n\n"
             f"[{src_color}]{item.source}[/]  "
             f"{score_badge} [{color}]Relevans {item.score}/10[/{color}]\n\n"
             f"[dim]Tryck Enter för att hämta fulltext[/dim]\n\n"
@@ -68,7 +68,7 @@ class ArticlePanelWidget(Widget):
         self._set_url(item.url)
         score_badge = ArticleClassifier.badge_for_score(item.score)
         self._set_body(
-            f"[bold]{item.title}[/bold]\n\n"
+            f"[bold]{_sanitize(item.title)}[/bold]\n\n"
             f"{score_badge} Relevans {item.score}/10\n\n"
             f"[dim blink]Hämtar artikel…[/dim blink]\n\n"
             f"[italic]{_sanitize(item.summary)}[/italic]"
@@ -122,7 +122,7 @@ def _build_article_body(
     ai_section = _format_ai_block(effective_ai_score, effective_ai_analysis)
 
     return (
-        f"[bold]{item.title}[/bold]\n\n"
+        f"[bold]{_sanitize(item.title)}[/bold]\n\n"
         f"[{src_color}]{item.source}[/]  "
         f"{score_badge} [{color}]Relevans {item.score}/10[/{color}]\n"
         f"{ai_section}"

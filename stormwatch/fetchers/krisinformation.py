@@ -69,4 +69,4 @@ def _extract_entries(data: Any) -> list[dict]:
         if isinstance(val, list):
             return [x for x in val if isinstance(x, dict)]
 
-    return [data]
+    return []

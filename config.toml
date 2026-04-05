@@ -63,6 +63,31 @@ url = "https://www.mynewsdesk.com/se/sos_alarm/pressreleases.rss"
 source = "SOS"
 optional = true
 
+[[feeds]]
+url = "https://polisen.se/aktuellt/rss/vastra-gotaland/handelser-rss---vastra-gotaland/"
+source = "POLIS"
+optional = true
+
+[[feeds]]
+url = "https://polisen.se/aktuellt/rss/halland/handelser-rss---halland/"
+source = "POLIS"
+optional = true
+
+[[feeds]]
+url = "https://www.svt.se/nyheter/lokalt/halland/rss.xml"
+source = "SVH"
+optional = true
+
+[[feeds]]
+url = "https://api.sr.se/api/rss/channel/104?format=1"
+source = "P4G"
+optional = true
+
+[[feeds]]
+url = "https://www.kustbevakningen.se/nyheter/rss"
+source = "KBV"
+optional = true
+
 [smhi]
 enabled = true
 counties = [14, 13]

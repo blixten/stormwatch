@@ -50,6 +50,17 @@ DEFAULT_KEYWORDS: dict[str, int] = {
     "liveblogg": 1,
     "skadad": 1,
     "olycka": 1,
+    # Stormkonsekvenser i polisrapporter och kustbevakningsnyheter
+    "träd på väg": 2,
+    "nedfallet träd": 2,
+    "stormskada": 3,
+    "avspärrning": 1,
+    "sjöräddning": 2,
+    "kustbevakning": 2,
+    "nödställd": 2,
+    "vindskada": 3,
+    "takskada": 2,
+    "elavbrott": 3,
 }
 
 # Nyckelord som MÅSTE finnas (minst ett) för att en artikel ska få poäng alls.
@@ -69,6 +80,9 @@ STORM_CORE_KEYWORDS: frozenset[str] = frozenset({
     # Direkta stormkonsekvenser
     "högt vattenstånd", "översvämning",
     "evakuering", "strömavbrott", "inställda tåg",
+    "stormskada", "vindskada", "elavbrott",
+    "träd på väg", "nedfallet träd", "takskada",
+    "sjöräddning", "nödställd",
 })
 
 

@@ -13,19 +13,23 @@ from stormwatch.models import NewsItem
 from stormwatch.widgets.activity_log import ActivityLogWidget
 
 SOURCE_COLORS: dict[str, str] = {
-    "GP":   "cyan",
-    "BL":   "green",
-    "ST":   "bright_green",
-    "SR":   "bright_yellow",
-    "P4V":  "yellow",
-    "SMHI": "bright_red",
-    "SVT":  "blue",
-    "AB":   "bright_magenta",
-    "EX":   "magenta",
-    "KRIS": "bright_blue",
-    "VMA":  "red",
-    "GOT":  "cyan",
-    "SOS":  "bright_cyan",
+    "GP":    "cyan",
+    "BL":    "green",
+    "ST":    "bright_green",
+    "SR":    "bright_yellow",
+    "P4V":   "yellow",
+    "P4G":   "yellow",
+    "SMHI":  "bright_red",
+    "SVT":   "blue",
+    "SVH":   "blue",
+    "AB":    "bright_magenta",
+    "EX":    "magenta",
+    "KRIS":  "bright_blue",
+    "VMA":   "red",
+    "GOT":   "cyan",
+    "SOS":   "bright_cyan",
+    "POLIS": "bright_blue",
+    "KBV":   "bright_cyan",
 }
 
 

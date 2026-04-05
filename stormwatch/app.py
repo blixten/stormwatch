@@ -84,7 +84,7 @@ def _default_config() -> dict:
 # Lokala/regionala källor med överlappande bevakning (GP, Bohuslänningen, Strömstads Tidning).
 # Artiklar med identisk normaliserad titel deduplificeras inbördes eftersom dessa tidningar
 # ofta publicerar samma TT-telegram eller täcker exakt samma lokala händelse.
-_REGIONAL_SOURCES: frozenset[str] = frozenset({"GP", "BL", "ST", "P4V"})
+_REGIONAL_SOURCES: frozenset[str] = frozenset({"GP", "BL", "ST", "P4V", "P4G", "SVT", "SVH"})
 
 
 def _normalize_title(title: str) -> str:
@@ -420,8 +420,9 @@ class StormWatchApp(App):
         self._log("Fulltext hämtad")
         self.post_message(ArticleTextReady(item, text))
 
-        # AI-relevansbedömning om tillgänglig
-        if self._ai_analyzer and self._ai_analyzer.is_available():
+        # AI-relevansbedömning om tillgänglig (ej vid skrapningsfel)
+        scrape_ok = text and not text.startswith("[")
+        if scrape_ok and self._ai_analyzer and self._ai_analyzer.is_available():
             self._log("Analyserar artikel med AI…")
             ai_score, ai_analysis = await self._ai_analyzer.analyze(
                 item.title, item.summary, text
