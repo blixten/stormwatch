@@ -133,6 +133,38 @@ ListItem > Static {
     overflow-y: auto;
 }
 
+/* ─── Bropanel ────────────────────────────────────────────── */
+
+#bridge-panel {
+    height: auto;
+    min-height: 3;
+    border: solid $success-darken-2;
+    padding: 0;
+}
+
+#bridge-panel:focus-within {
+    border: solid $success;
+}
+
+#bridge-title {
+    background: $success-darken-1;
+    color: $background;
+    text-style: bold;
+    width: 100%;
+    padding: 0 1;
+    height: 1;
+}
+
+.bridge-row {
+    height: 1;
+    padding: 0;
+}
+
+#bridge-updated {
+    height: 1;
+    color: $text-muted;
+}
+
 /* ─── Aktivitetslogg ──────────────────────────────────────── */
 
 #activity-log {
