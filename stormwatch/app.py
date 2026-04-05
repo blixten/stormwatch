@@ -26,6 +26,7 @@ from stormwatch.fetchers.krisinformation import KrisinformationFetcher
 from stormwatch.fetchers.rss import RssFetcher
 from stormwatch.fetchers.smhi import SmhiFetcher
 from stormwatch.fetchers.stromstadstidning import StromstadsTidningFetcher
+from stormwatch.fetchers.sr_p4vast import SrP4VastFetcher
 from stormwatch.fetchers.vma import VmaFetcher
 from stormwatch.fetchers.viva import VivaFetcher
 from stormwatch.history import WeatherHistory
@@ -83,7 +84,7 @@ def _default_config() -> dict:
 # Lokala/regionala källor med överlappande bevakning (GP, Bohuslänningen, Strömstads Tidning).
 # Artiklar med identisk normaliserad titel deduplificeras inbördes eftersom dessa tidningar
 # ofta publicerar samma TT-telegram eller täcker exakt samma lokala händelse.
-_REGIONAL_SOURCES: frozenset[str] = frozenset({"GP", "BL", "ST"})
+_REGIONAL_SOURCES: frozenset[str] = frozenset({"GP", "BL", "ST", "P4V"})
 
 
 def _normalize_title(title: str) -> str:
@@ -330,6 +331,7 @@ class StormWatchApp(App):
         vma_cfg = self._config.get("vma", {})
         bl_cfg = self._config.get("bohuslaningen", {})
         st_cfg = self._config.get("stromstadstidning", {})
+        sr_p4v_cfg = self._config.get("sr_p4vast", {})
         if not self._http or not self._classifier:
             return
 
@@ -375,6 +377,13 @@ class StormWatchApp(App):
             st_raw = await st_fetcher.fetch_news(self._http)
             raw.extend(st_raw)
             self._log(f"ST: {len(st_raw)} artiklar")
+
+        if sr_p4v_cfg.get("enabled", True):
+            self._log("Hämtar SR P4 Väst…")
+            sr_p4v_fetcher = SrP4VastFetcher()
+            sr_p4v_raw = await sr_p4v_fetcher.fetch_news(self._http)
+            raw.extend(sr_p4v_raw)
+            self._log(f"P4V: {len(sr_p4v_raw)} artiklar")
 
         self._log(f"Klassificerar {len(raw)} artiklar…")
         items = _build_news_items(raw, self._classifier)

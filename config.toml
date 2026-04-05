@@ -39,11 +39,6 @@ source = "SR"
 optional = true
 
 [[feeds]]
-url = "https://sverigesradio.se/rss/program/4916"
-source = "P4V"
-optional = true
-
-[[feeds]]
 url = "https://www.svt.se/nyheter/lokalt/vast/rss"
 source = "SVT"
 optional = true
@@ -83,4 +78,7 @@ enabled = true
 enabled = true
 
 [stromstadstidning]
+enabled = true
+
+[sr_p4vast]
 enabled = true
