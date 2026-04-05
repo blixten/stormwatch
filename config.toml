@@ -107,3 +107,10 @@ enabled = true
 
 [sr_p4vast]
 enabled = true
+
+[trafikverket]
+enabled = false
+api_key = ""
+lat = 57.70
+lon = 11.97
+radius_km = 200

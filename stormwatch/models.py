@@ -35,6 +35,17 @@ class NewsItem:
     is_updated: bool = False  # True om artikeln uppdaterats sedan förra hämtningen
 
 
+@dataclass(frozen=True)
+class BridgeStatus:
+    name: str                        # brons namn / rubriken från Trafikverket
+    header: str                      # fullständig textbeskrivning
+    severity: str                    # "Låg" / "Medel" / "Hög" / "Okänd"
+    message_code: str                # Trafikverket MessageCode
+    start_time: Optional[datetime]   # störningens starttid
+    end_time: Optional[datetime]     # störningens sluttid
+    is_closed: bool = False          # True = bron är stängd
+
+
 @dataclass
 class AppState:
     readings: list = field(default_factory=list)       # list[StationReading]

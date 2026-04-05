@@ -28,12 +28,14 @@ from stormwatch.fetchers.smhi import SmhiFetcher
 from stormwatch.fetchers.stromstadstidning import StromstadsTidningFetcher
 from stormwatch.fetchers.sr_p4vast import SrP4VastFetcher
 from stormwatch.fetchers.vma import VmaFetcher
+from stormwatch.fetchers.trafikverket import TrafikverketFetcher
 from stormwatch.fetchers.viva import VivaFetcher
 from stormwatch.history import WeatherHistory
-from stormwatch.models import AppState, NewsItem, StationReading
+from stormwatch.models import AppState, BridgeStatus, NewsItem, StationReading
 from stormwatch.scraper import ArticleScraper
 from stormwatch.widgets.activity_log import ActivityLogWidget
 from stormwatch.widgets.article_panel import ArticlePanelWidget
+from stormwatch.widgets.bridge_panel import BridgePanelWidget
 from stormwatch.widgets.history_panel import HistoryPanelWidget
 from stormwatch.widgets.news_list import NewsListWidget
 from stormwatch.widgets.weather_panel import WeatherPanelWidget
@@ -185,6 +187,12 @@ class AiAnalysisReady(Message):
         self.ai_analysis = ai_analysis
         super().__init__()
 
+class BridgesUpdated(Message):
+    def __init__(self, bridges: list[BridgeStatus], api_configured: bool) -> None:
+        self.bridges = bridges
+        self.api_configured = api_configured
+        super().__init__()
+
 
 # ─── Huvudapp ────────────────────────────────────────────────────────────────
 
@@ -230,6 +238,7 @@ class StormWatchApp(App):
             yield NewsListWidget(id="news-panel")
             with Vertical(id="right-panel"):
                 yield WeatherPanelWidget(id="weather-panel")
+                yield BridgePanelWidget(id="bridge-panel")
                 yield Label("", id="right-divider")
                 yield ArticlePanelWidget(id="article-panel")
                 yield HistoryPanelWidget(id="history-panel")
@@ -321,6 +330,24 @@ class StormWatchApp(App):
         readings = await fetcher.fetch_all(stations, self._http)
         self._log(f"Väder uppdaterat – {len(readings)} stationer")
         self.post_message(WeatherUpdated(readings))
+
+        # Hämta brostatus från Trafikverket
+        tv_cfg = self._config.get("trafikverket", {})
+        if tv_cfg.get("enabled", False):
+            api_key = tv_cfg.get("api_key", "")
+            lat = tv_cfg.get("lat", 57.70)
+            lon = tv_cfg.get("lon", 11.97)
+            radius_km = tv_cfg.get("radius_km", 200)
+            self._log("Hämtar brostatus från Trafikverket…")
+            tv_fetcher = TrafikverketFetcher()
+            bridges = await tv_fetcher.fetch_bridge_status(
+                api_key, self._http, lat=lat, lon=lon, radius_km=radius_km
+            )
+            self._log(f"Brostatus: {len(bridges)} störning(ar)")
+            self.post_message(BridgesUpdated(bridges, api_configured=bool(api_key)))
+        else:
+            self.post_message(BridgesUpdated([], api_configured=False))
+
         self._restore_subtitle()
 
     @work(exclusive=True, name="news_refresh")
@@ -445,6 +472,11 @@ class StormWatchApp(App):
         self.query_one(WeatherPanelWidget).refresh_display(msg.readings, self._history)
         if self._history_visible:
             self.query_one(HistoryPanelWidget).refresh_display(self._history)
+
+    def on_bridges_updated(self, msg: BridgesUpdated) -> None:
+        self.query_one(BridgePanelWidget).refresh_display(
+            msg.bridges, api_configured=msg.api_configured
+        )
 
     def on_news_updated(self, msg: NewsUpdated) -> None:
         self._state.last_news_refresh = datetime.now()
